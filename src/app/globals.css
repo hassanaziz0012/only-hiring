@@ -1,26 +1,398 @@
 @import "tailwindcss";
 
+/*
+  Design tokens. Mint stands for what we kept (jobs), pink for what we flagged
+  (scam warnings, the "check before you apply" footer). Deep green is the action.
+  Every colour below is referenced through these variables only.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --bg: #f8f8f8;
+  --surface: #ececec;
+  --surface-2: #dfdfdf;
+  --ink: #0a0a0a;
+  --muted: #565656;
+  --accent: #1f6b3a;
+  --accent-hover: #175530;
+  --accent-ink: #ffffff;
+  --mint: #c3edce;
+  --mint-ink: #0a0a0a;
+  --pink: #f8c7c9;
+  --pink-ink: #0a0a0a;
+  --pink-deep: #9e1f2a;
+  --focus: #1f6b3a;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0d1410;
+    --surface: #17211b;
+    --surface-2: #213028;
+    --ink: #edf3ee;
+    --muted: #a3b4a9;
+    --accent: #8fe0a7;
+    --accent-hover: #aaebbe;
+    --accent-ink: #07120b;
+    --mint: #1b3826;
+    --mint-ink: #e2f7e8;
+    --pink: #47232a;
+    --pink-ink: #ffe3e4;
+    --pink-deep: #ffa3a9;
+    --focus: #8fe0a7;
+
+    color-scheme: dark;
   }
 }
 
+@theme inline {
+  --color-ground: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-mint: var(--mint);
+  --color-mint-ink: var(--mint-ink);
+  --color-pink: var(--pink);
+  --color-pink-ink: var(--pink-ink);
+  --color-pink-deep: var(--pink-deep);
+
+  --font-sans: var(--font-pilcrow), ui-rounded, "Nunito", system-ui, sans-serif;
+
+  /* Five sizes, no more. */
+  --text-small: clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem);
+  --text-small--line-height: 1.45;
+  --text-body: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+  --text-body--line-height: 1.5;
+  --text-lead: clamp(1.1875rem, 1.05rem + 0.6vw, 1.5rem);
+  --text-lead--line-height: 1.35;
+  --text-head: clamp(2rem, 1.4rem + 2vw, 3.25rem);
+  --text-head--line-height: 0.95;
+  --text-display: clamp(2.25rem, 0.3rem + 10vw, 11rem);
+  --text-display--line-height: 0.9;
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--mint);
+  color: var(--mint-ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+@layer components {
+  /* The page's one shape: the square bracket from "[Hiring]" post titles. */
+  .bracketed {
+    --bw: max(2px, 0.1em);
+    --arm: 0.26em;
+    position: relative;
+    display: inline-block;
+    padding-inline: calc(var(--arm) + 0.12em);
+  }
+  .bracketed::before,
+  .bracketed::after {
+    content: "";
+    position: absolute;
+    top: 0.08em;
+    bottom: 0.08em;
+    width: var(--arm);
+    border: 0 solid currentColor;
+    border-block-width: var(--bw);
+  }
+  .bracketed::before {
+    left: 0;
+    border-left-width: var(--bw);
+  }
+  .bracketed::after {
+    right: 0;
+    border-right-width: var(--bw);
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 90rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 48rem) {
+    .shell {
+      padding-inline: 2rem;
+    }
+  }
+
+  .display {
+    font-size: var(--text-display);
+    line-height: 0.9;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    text-transform: lowercase;
+  }
+  .head {
+    font-size: var(--text-head);
+    line-height: 0.95;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+  }
+
+  /* One button shape for the whole site: square, flat, one fill. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    min-height: 2.75rem;
+    padding: 0.55rem 1.1rem;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 700;
+    font-size: var(--text-body);
+    line-height: 1.2;
+    text-decoration: none;
+    transition:
+      background-color 160ms ease,
+      transform 120ms ease;
+  }
+  .btn:hover {
+    background: var(--accent-hover);
+  }
+  .btn:active {
+    transform: translateY(1px) scale(0.985);
+  }
+  .btn-quiet {
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .btn-quiet:hover {
+    background: var(--surface-2);
+  }
+
+  .link {
+    text-decoration: underline;
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.18em;
+    transition: text-decoration-color 160ms ease;
+  }
+  .link:hover {
+    text-decoration-color: var(--accent);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.15rem 0.5rem;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: var(--text-small);
+    line-height: 1.45;
+  }
+  .chip-warn {
+    background: var(--pink);
+    color: var(--pink-ink);
+    font-weight: 700;
+  }
+  .chip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Filter toggles: selected options get tagged with brackets, like a post title. */
+  .toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4em;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: var(--text-small);
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 160ms ease,
+      transform 120ms ease;
+  }
+  .toggle:hover {
+    background: var(--surface-2);
+  }
+  .toggle:active {
+    transform: scale(0.97);
+  }
+  .toggle .count {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .toggle[aria-pressed="true"] {
+    background: var(--mint);
+    color: var(--mint-ink);
+    font-weight: 700;
+  }
+  .toggle[aria-pressed="true"] .count {
+    color: inherit;
+  }
+  .toggle::before,
+  .toggle::after {
+    content: "";
+    position: absolute;
+    top: 0.3rem;
+    bottom: 0.3rem;
+    width: 0.3rem;
+    border: 0 solid currentColor;
+    border-block-width: 2px;
+    opacity: 0;
+    transition:
+      opacity 160ms ease,
+      transform 200ms var(--ease-out-quart);
+  }
+  .toggle::before {
+    left: 0.25rem;
+    border-left-width: 2px;
+    transform: translateX(3px);
+  }
+  .toggle::after {
+    right: 0.25rem;
+    border-right-width: 2px;
+    transform: translateX(-3px);
+  }
+  .toggle[aria-pressed="true"]::before,
+  .toggle[aria-pressed="true"]::after {
+    opacity: 1;
+    transform: none;
+  }
+  .toggle:disabled {
+    cursor: default;
+    opacity: 0.45;
+  }
+
+  .field {
+    width: 100%;
+    background: var(--surface);
+    color: var(--ink);
+    border: 0;
+    border-radius: 0;
+  }
+  .field::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+
+  .check {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex: none;
+    accent-color: var(--accent);
+    margin-top: 0.2em;
+  }
+
+  .sr-only-focusable:not(:focus) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* The one orchestrated moment: the headline gets tagged as the page loads. */
+@keyframes bracket-in-left {
+  from {
+    transform: translateX(-0.35em);
+    opacity: 0;
+  }
+}
+@keyframes bracket-in-right {
+  from {
+    transform: translateX(0.35em);
+    opacity: 0;
+  }
+}
+@keyframes rise-in {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+}
+
+.masthead-tag::before {
+  animation: bracket-in-left 700ms var(--ease-out-quart) 120ms both;
+}
+.masthead-tag::after {
+  animation: bracket-in-right 700ms var(--ease-out-quart) 120ms both;
+}
+.rise {
+  animation: rise-in 600ms var(--ease-out-quart) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Dialog (mobile filters) is the only thing that floats, so it's the only thing with a shadow. */
+dialog.sheet {
+  margin: 0;
+  margin-top: auto;
+  width: 100%;
+  max-width: 100%;
+  max-height: 88svh;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.25);
+}
+dialog.sheet[open] {
+  animation: sheet-up 280ms var(--ease-out-quart);
+}
+dialog.sheet::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }
