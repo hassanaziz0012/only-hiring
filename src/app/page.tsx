@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { JobBoard } from "@/components/board/JobBoard";
 import { DataError } from "@/components/DataError";
+import { ExactTime } from "@/components/RelativeTime";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getJobs } from "@/lib/db";
-import { countLabel, exactDate } from "@/lib/format";
+import { countLabel } from "@/lib/format";
 import { isExpired, isLikelyScam } from "@/lib/jobs";
 
 export const metadata: Metadata = {
@@ -13,13 +14,22 @@ export const metadata: Metadata = {
 export default async function Home() {
   const result = await getJobs();
 
-  let summary: string | null = null;
+  let summary: React.ReactNode = null;
   if (result.ok) {
     const at = Date.parse(result.fetchedAt);
     const open = result.jobs.filter((j) => !isExpired(j, at) && !isLikelyScam(j));
     const subs = new Set(open.map((j) => j.subreddit)).size;
-    summary = `${countLabel(open.length, "open job")} from ${countLabel(subs, "subreddit")}.`;
-    if (result.syncedAt) summary += ` Last updated ${exactDate(result.syncedAt, "UTC")} UTC.`;
+    summary = (
+      <>
+        {countLabel(open.length, "open job")} from {countLabel(subs, "subreddit")}.
+        {result.syncedAt && (
+          <>
+            {" "}
+            Last updated <ExactTime iso={result.syncedAt} />.
+          </>
+        )}
+      </>
+    );
   }
 
   return (
