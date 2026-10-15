@@ -98,6 +98,13 @@ body {
   color: var(--mint-ink);
 }
 
+/* On mint surfaces a mint selection is invisible, so use the deep green there. */
+.bg-mint::selection,
+.bg-mint ::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
