@@ -1,8 +1,10 @@
 import "server-only";
 
 import { neon } from "@neondatabase/serverless";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { JOB_COLUMNS, parseJobRow, type Job, type JobRow } from "./jobs";
+
+export const JOBS_CACHE_TAG = "jobs";
 
 export type JobsResult =
   | {
@@ -23,11 +25,12 @@ function redact(message: string): string {
 /**
  * Every job in the table, newest first. Read-only: the web_reader role can only SELECT.
  *
- * Cached for 2 hours. A failed read is cached
+ * Cached for 2 hours, or until /api/revalidate clears the JOBS_CACHE_TAG. A failed read is cached
  * for only a minute, so the site recovers soon after the database comes back.
  */
 export async function getJobs(): Promise<JobsResult> {
   "use cache";
+  cacheTag(JOBS_CACHE_TAG);
   const fetchedAt = new Date().toISOString();
 
   try {
