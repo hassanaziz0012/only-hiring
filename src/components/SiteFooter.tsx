@@ -13,8 +13,7 @@ export function SiteFooter() {
               Check the post before you apply
             </h2>
             <p className="mt-2 max-w-[46ch]">
-              Summaries, pay and scam scores are written by a language model and can be wrong. Read the original post on
-              Reddit before you reply, and never pay anyone to get a job.
+              Read the original post on Reddit before you reply, and never pay anyone to get a job.
             </p>
           </section>
           {hasRemovalContact() && (
