@@ -14,7 +14,7 @@ export function removalEmail(): string | null {
 }
 
 /** Public source repository. Set once the repo is public; links are hidden while null. */
-export const SOURCE_URL: string | null = null;
+export const SOURCE_URL: string | null = "https://github.com/hassanaziz0012/only-hiring";
 
 /** Jobs posted longer ago than this move to the collapsed "older posts" section. */
 export const EXPIRY_DAYS = 14;
