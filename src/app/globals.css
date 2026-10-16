@@ -88,6 +88,9 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-body);
   line-height: 1.5;
+  /* Scraped text can hold unbroken runs (long URLs, mangled summaries) that
+     would otherwise push the page wider than a phone screen. */
+  overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
