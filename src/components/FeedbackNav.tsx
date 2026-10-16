@@ -18,7 +18,13 @@ export function FeedbackNav() {
 
   return (
     <>
-      <button type="button" className="link" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+      {/* Bolder, with an accent underline: the app is new and feedback is the thing we most want people to find. */}
+      <button
+        type="button"
+        className="link font-bold decoration-accent decoration-2"
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+      >
         Feedback
       </button>
       <dialog
@@ -128,6 +134,10 @@ function FeedbackForm({ onClose }: { onClose: () => void }) {
         <input name="website" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
         <p role="alert" className={error ? "bg-pink p-3 text-pink-ink" : "sr-only"}>
           {error}
+        </p>
+        <p className="text-small text-muted">
+          This is a new app, and I&apos;m looking for as much honest feedback as possible. Feel free to share
+          any suggestions you have. Thank you so much for using it!
         </p>
         <button type="submit" className="btn w-full" disabled={status === "sending"}>
           {status === "sending" ? "Sending…" : "Send feedback"}
