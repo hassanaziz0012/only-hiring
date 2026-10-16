@@ -26,3 +26,18 @@ create table applied_job (
   applied_at timestamptz not null default now(),
   primary key (user_id, job_id)
 );
+
+-- Anonymous feedback from the header's Feedback dialog. Each row is also emailed to
+-- REMOVAL_EMAIL; emailed stays false if that failed, so nothing is lost. ip_hash is a salted
+-- hash of the sender's IP, kept only to rate-limit submissions.
+create table feedback (
+  id bigint generated always as identity primary key,
+  message text not null,
+  reply_email text,
+  page text,
+  ip_hash text not null,
+  emailed boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index feedback_ip_hash_created_at_idx on feedback (ip_hash, created_at);

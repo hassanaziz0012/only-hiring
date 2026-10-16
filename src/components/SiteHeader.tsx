@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SITE_NAME, SOURCE_URL } from "@/lib/site";
 import { AccountNav } from "./account/AccountNav";
+import { FeedbackNav } from "./FeedbackNav";
 import { Wordmark } from "./Wordmark";
 
 export function SiteHeader() {
@@ -10,10 +11,12 @@ export function SiteHeader() {
         <Wordmark />
       </Link>
       <nav aria-label="Site">
-        <ul className="flex items-center gap-5 text-body">
+        <ul className="flex items-center gap-3 text-body min-[22.5rem]:gap-5">
           <li>
             <Link href="/about" className="link">
-              How it works
+              {/* The full label doesn't fit beside the other links on phones narrower than 360px. */}
+              <span className="min-[22.5rem]:hidden">About</span>
+              <span className="hidden min-[22.5rem]:inline">How it works</span>
             </Link>
           </li>
           {SOURCE_URL && (
@@ -23,6 +26,9 @@ export function SiteHeader() {
               </a>
             </li>
           )}
+          <li>
+            <FeedbackNav />
+          </li>
           <li>
             <AccountNav />
           </li>

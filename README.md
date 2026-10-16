@@ -52,6 +52,8 @@ npm run dev
 
 `REMOVAL_EMAIL` is optional config: the address shown for removal requests in the footer and on the About page. It is read on the server at build time. If it's unset, the site links to this repo's issue tracker instead.
 
+`RESEND_API_KEY` is optional: it emails each message from the header's Feedback dialog to `REMOVAL_EMAIL`, sent from `feedback@hassandev.me` (a domain verified in Resend). Messages are also stored in the accounts database's `feedback` table, so a failed email loses nothing (`emailed` stays false). Each IP can send 5 an hour.
+
 On Vercel, set these in the project's environment variables for Production and Preview.
 
 Without a reachable database the site still builds and renders a "the job list didn't load" state, then retries every minute.
@@ -71,6 +73,7 @@ src/
     robots.ts, sitemap.ts, opengraph-image.tsx, icon.svg
   components/
     account/              sign-in dialog, header link, session sync
+    FeedbackNav.tsx       header Feedback link and dialog (posts to app/api/feedback)
     board/                client-side filters, search, sorting, grouping
     JobItem.tsx           one job in the list
     JobDetail.tsx         the detail view
