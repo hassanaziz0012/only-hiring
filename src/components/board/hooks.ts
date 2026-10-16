@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { filtersFromSearch, filtersToSearch, type Filters } from "./filters";
+import { DEFAULT_FILTERS, filtersFromSearch, filtersToSearch, type Filters } from "./filters";
 
 // The URL query string is the filter state, so a filtered view can be shared or bookmarked.
 // The server always renders the unfiltered list (empty search), and the browser applies
@@ -21,15 +21,26 @@ function subscribeUrl(onChange: () => void) {
 const getSearch = () => window.location.search;
 const getServerSearch = () => "";
 
+function replaceSearch(search: string) {
+  const url = `${window.location.pathname}${search}${window.location.hash}`;
+  window.history.replaceState(null, "", url);
+  urlListeners.forEach((listener) => listener());
+}
+
 export function useUrlFilters(): [Filters, (next: Filters) => void] {
   const search = useSyncExternalStore(subscribeUrl, getSearch, getServerSearch);
   const filters = useMemo(() => filtersFromSearch(search), [search]);
-  const setFilters = useCallback((next: Filters) => {
-    const url = `${window.location.pathname}${filtersToSearch(next)}${window.location.hash}`;
-    window.history.replaceState(null, "", url);
-    urlListeners.forEach((listener) => listener());
-  }, []);
+  const setFilters = useCallback((next: Filters) => replaceSearch(filtersToSearch(next)), []);
   return [filters, setFilters];
+}
+
+/**
+ * Apply filters to the board already on screen. Next's router doesn't re-render the board for
+ * a search-only change on the same page, so links to a filtered "/" from "/" use this instead.
+ */
+export function showFilteredBoard(next: Partial<Filters>) {
+  replaceSearch(filtersToSearch({ ...DEFAULT_FILTERS, ...next }));
+  document.getElementById("jobs")?.scrollIntoView();
 }
 
 // A clock that ticks once a minute. Null during server render and hydration, so the

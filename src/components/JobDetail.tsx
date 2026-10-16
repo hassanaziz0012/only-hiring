@@ -11,6 +11,7 @@ import {
   WORK_MODE_LABELS,
 } from "@/lib/labels";
 import { AppliedToggle } from "./AppliedToggle";
+import { RedditLink } from "./RedditLink";
 import { ExactTime, RelativeTime } from "./RelativeTime";
 
 function Fact({ term, children }: { term: string; children: React.ReactNode }) {
@@ -148,15 +149,7 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
               {job.applyMethod ? `${labelFor(APPLY_METHOD_LABELS, job.applyMethod)}.` : "The post explains how to apply."} Read
               the full post first.
             </p>
-            <a
-              className="btn mt-6 w-full"
-              href={job.redditUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View on Reddit
-              <span className="sr-only"> (opens in a new tab)</span>
-            </a>
+            <RedditLink className="btn mt-6 w-full" href={job.redditUrl} />
             <div className="mt-3">
               <AppliedToggle id={job.id} title={job.jobTitle} size="large" />
             </div>

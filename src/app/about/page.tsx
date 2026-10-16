@@ -158,8 +158,9 @@ export default function AboutPage() {
               <div>
                 <h3 className="text-lead font-bold">Your data</h3>
                 <p className="mt-2">
-                  No accounts, no tracking, no analytics. Jobs you mark as applied are saved in your browser and never
-                  leave it.
+                  No tracking, no analytics. Jobs you mark as applied are saved in your browser. If you create an
+                  account (optional: sign in with Google, or an email and password), they&apos;re saved to it instead, so they survive
+                  cleared browser data and show up on any device. You can delete your account at any time.
                 </p>
               </div>
               {hasRemovalContact() && (

@@ -358,7 +358,7 @@ body {
   animation-delay: var(--delay, 0ms);
 }
 
-/* Dialog (mobile filters) is the only thing that floats, so it's the only thing with a shadow. */
+/* Dialogs (mobile filters, account) are the only things that float, so they're the only things with a shadow. */
 dialog.sheet {
   margin: 0;
   margin-top: auto;
@@ -382,6 +382,24 @@ dialog.sheet::backdrop {
     transform: translateY(24px);
     opacity: 0;
   }
+}
+
+dialog.modal {
+  margin: auto;
+  width: calc(100% - 2rem);
+  max-width: 30rem;
+  max-height: calc(100svh - 2rem);
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+}
+dialog.modal[open] {
+  animation: sheet-up 280ms var(--ease-out-quart);
+}
+dialog.modal::backdrop {
+  background: rgb(0 0 0 / 0.45);
 }
 
 details > summary {

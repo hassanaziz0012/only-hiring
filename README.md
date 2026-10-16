@@ -32,7 +32,7 @@ About three in four posts on subreddits like r/forhire, r/slavelabour or r/Desig
 | Jobs at or above this scam score show a warning | 0.4 | `src/lib/site.ts` |
 | Page data refreshes | every 2 hours | `src/lib/db.ts` (`cacheLife`) |
 
-Filtering, search and sorting run in the browser, since the dataset is small. Filters are kept in the URL, so filtered views can be shared. "Applied" marks are stored in the visitor's `localStorage` only. There are no accounts, no analytics and no tracking.
+Filtering, search and sorting run in the browser, since the dataset is small. Filters are kept in the URL, so filtered views can be shared. "Applied" marks are stored in the visitor's `localStorage`, or in their account if they sign in. Accounts are optional (email and password, or Google, via [better-auth](https://www.better-auth.com)); signing in merges the browser's marks into the account. A signed-out visitor who marks a job or opens a post on Reddit is offered an account once, then not again for 14 days after dismissing it.
 
 ## Running it locally
 
@@ -44,11 +44,15 @@ cp .env.example .env.local   # then set WEB_DATABASE_URL (and optionally REMOVAL
 npm run dev
 ```
 
-`WEB_DATABASE_URL` is a Postgres connection string for a role that can only `SELECT` from the `jobs` table. It is the only secret the app needs.
+`WEB_DATABASE_URL` is a Postgres connection string for a role that can only `SELECT` from the `jobs` table.
+
+`DATABASE_URL` is a second, separate Postgres database for accounts and their applied marks; create its tables with `db/schema.sql`. `BETTER_AUTH_SECRET` signs session cookies (`openssl rand -base64 32`).
+
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are optional and turn on "Continue with Google". They come from an OAuth client of type "Web application" in Google Cloud Console, with `https://<your domain>/api/auth/callback/google` as an authorized redirect URI (add `http://localhost:3000/...` for local use). The button is shown only when both are set at build time.
 
 `REMOVAL_EMAIL` is optional config: the address shown for removal requests in the footer and on the About page. It is read on the server at build time. If it's unset, the site links to this repo's issue tracker instead.
 
-On Vercel, set both in the project's environment variables for Production and Preview.
+On Vercel, set these in the project's environment variables for Production and Preview.
 
 Without a reachable database the site still builds and renders a "the job list didn't load" state, then retries every minute.
 
@@ -66,6 +70,7 @@ src/
     about/page.tsx        how it works, scam scores, limits, removal requests
     robots.ts, sitemap.ts, opengraph-image.tsx, icon.svg
   components/
+    account/              sign-in dialog, header link, session sync
     board/                client-side filters, search, sorting, grouping
     JobItem.tsx           one job in the list
     JobDetail.tsx         the detail view
@@ -74,7 +79,8 @@ src/
     jobs.ts               row type, defensive parsing, expiry and scam rules
     labels.ts             human labels for enum-like columns
     format.ts             pay, date and time formatting
-    applied.ts            the localStorage "applied" store
+    applied.ts            the "applied" store: localStorage, or the account when signed in
+    auth.ts               better-auth config and the accounts database (server-only)
     site.ts               site name, thresholds, removal contact
 ```
 

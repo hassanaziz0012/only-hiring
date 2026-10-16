@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SITE_NAME, SOURCE_URL } from "@/lib/site";
+import { AccountNav } from "./account/AccountNav";
 import { Wordmark } from "./Wordmark";
 
 export function SiteHeader() {
@@ -16,12 +17,15 @@ export function SiteHeader() {
             </Link>
           </li>
           {SOURCE_URL && (
-            <li>
+            <li className="hidden sm:block">
               <a href={SOURCE_URL} className="link">
                 Source
               </a>
             </li>
           )}
+          <li>
+            <AccountNav />
+          </li>
         </ul>
       </nav>
     </header>

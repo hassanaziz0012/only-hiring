@@ -2,7 +2,7 @@
 
 import { setApplied, useAppliedIds } from "@/lib/applied";
 
-/** A checkbox, stored in this browser only. */
+/** A checkbox, saved in this browser, or to the account when signed in. */
 export function AppliedToggle({ id, title, size = "small" }: { id: string; title: string; size?: "small" | "large" }) {
   const applied = useAppliedIds().has(id);
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Facet, FacetOption, Filters } from "./filters";
+import type { AppliedFilter, Facet, FacetOption, Filters } from "./filters";
 
 const COLLAPSED_ROLES = 8;
 
@@ -79,19 +79,62 @@ function CheckRow({ checked, onChange, children }: { checked: boolean; onChange:
   );
 }
 
+function AppliedGroup({
+  value,
+  count,
+  onChange,
+}: {
+  value: AppliedFilter;
+  count: number;
+  onChange: (patch: Partial<Filters>) => void;
+}) {
+  const choices: { value: AppliedFilter; label: string }[] = [
+    { value: "only", label: "Only these" },
+    { value: "hide", label: "Hide them" },
+  ];
+  return (
+    <fieldset>
+      <legend className="text-body font-bold">
+        Jobs you applied to <span className="font-normal text-muted tabular-nums">({count})</span>
+      </legend>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {choices.map((choice) => {
+          const isOn = value === choice.value;
+          return (
+            <button
+              key={choice.value}
+              type="button"
+              className="toggle"
+              aria-pressed={isOn}
+              onClick={() => onChange({ applied: isOn ? "all" : choice.value })}
+            >
+              <span>{choice.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 export function FilterPanel({
   filters,
   onChange,
   options,
   scamCount,
+  appliedCount,
 }: {
   filters: Filters;
   onChange: (patch: Partial<Filters>) => void;
   options: Record<Facet, FacetOption[]>;
   scamCount: number;
+  appliedCount: number;
 }) {
   return (
     <div className="space-y-9">
+      {(appliedCount > 0 || filters.applied !== "all") && (
+        <AppliedGroup value={filters.applied} count={appliedCount} onChange={onChange} />
+      )}
       <FacetGroup title="Role" facet="roles" options={options.roles} filters={filters} onChange={onChange} collapsible />
       <FacetGroup title="Work mode" facet="modes" options={options.modes} filters={filters} onChange={onChange} />
       <FacetGroup title="Pay" facet="pay" options={options.pay} filters={filters} onChange={onChange} />
@@ -100,9 +143,6 @@ export function FilterPanel({
         <div className="mt-2">
           <CheckRow checked={filters.hideCommission} onChange={(v) => onChange({ hideCommission: v })}>
             Hide commission-only jobs
-          </CheckRow>
-          <CheckRow checked={filters.hideApplied} onChange={(v) => onChange({ hideApplied: v })}>
-            Hide jobs I&apos;ve applied to
           </CheckRow>
           <CheckRow checked={filters.showScams} onChange={(v) => onChange({ showScams: v })}>
             Show likely scams

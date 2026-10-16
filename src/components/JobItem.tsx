@@ -3,6 +3,7 @@ import { exactDate, formatPay, relativeTime, shortAge } from "@/lib/format";
 import { scamWarningLabel, type Job } from "@/lib/jobs";
 import { EMPLOYMENT_LABELS, labelFor, ROLE_LABELS, SENIORITY_LABELS, WORK_MODE_LABELS } from "@/lib/labels";
 import { AppliedToggle } from "./AppliedToggle";
+import { RedditLink } from "./RedditLink";
 
 const MAX_SKILLS = 4;
 
@@ -103,10 +104,7 @@ export function JobItem({
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <a className="btn text-small" href={job.redditUrl} target="_blank" rel="noopener noreferrer">
-          View on Reddit
-          <span className="sr-only"> (opens in a new tab)</span>
-        </a>
+        <RedditLink className="btn text-small" href={job.redditUrl} />
         <AppliedToggle id={job.id} title={job.jobTitle} />
       </div>
     </article>

@@ -13,13 +13,16 @@ import {
 
 export type Sort = "newest" | "pay";
 
+/** Jobs the visitor marked as applied: shown with the rest, hidden, or shown alone. */
+export type AppliedFilter = "all" | "hide" | "only";
+
 export type Filters = {
   q: string;
   roles: string[];
   modes: string[];
   pay: string[];
   hideCommission: boolean;
-  hideApplied: boolean;
+  applied: AppliedFilter;
   showScams: boolean;
   sort: Sort;
 };
@@ -33,7 +36,7 @@ export const DEFAULT_FILTERS: Filters = {
   modes: [],
   pay: [],
   hideCommission: false,
-  hideApplied: false,
+  applied: "all",
   showScams: false,
   sort: "newest",
 };
@@ -52,7 +55,7 @@ export function filtersFromSearch(search: string): Filters {
     modes: list(params, "mode"),
     pay: list(params, "pay"),
     hideCommission: params.get("commission") === "hide",
-    hideApplied: params.get("applied") === "hide",
+    applied: params.get("applied") === "hide" ? "hide" : params.get("applied") === "only" ? "only" : "all",
     showScams: params.get("scams") === "show",
     sort: params.get("sort") === "pay" ? "pay" : "newest",
   };
@@ -65,7 +68,7 @@ export function filtersToSearch(f: Filters): string {
   if (f.modes.length) params.set("mode", f.modes.join(","));
   if (f.pay.length) params.set("pay", f.pay.join(","));
   if (f.hideCommission) params.set("commission", "hide");
-  if (f.hideApplied) params.set("applied", "hide");
+  if (f.applied !== "all") params.set("applied", f.applied);
   if (f.showScams) params.set("scams", "show");
   if (f.sort !== "newest") params.set("sort", f.sort);
   const s = params.toString();
@@ -80,7 +83,7 @@ export function activeFilterCount(f: Filters): number {
     f.modes.length +
     f.pay.length +
     (f.hideCommission ? 1 : 0) +
-    (f.hideApplied ? 1 : 0)
+    (f.applied !== "all" ? 1 : 0)
   );
 }
 
@@ -138,7 +141,8 @@ export function matches(job: Job, f: Filters, applied: ReadonlySet<string>, skip
     if (selected.length && !selected.includes(facetValue(job, facet))) return false;
   }
   if (f.hideCommission && job.payType === "commission_only") return false;
-  if (f.hideApplied && applied.has(job.id)) return false;
+  if (f.applied === "hide" && applied.has(job.id)) return false;
+  if (f.applied === "only" && !applied.has(job.id)) return false;
   return true;
 }
 

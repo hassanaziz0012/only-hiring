@@ -48,20 +48,27 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
       hiddenScams,
       olderVisible,
       totalScams: fresh.filter(isLikelyScam).length,
+      appliedCount: jobs.filter((j) => applied.has(j.id)).length,
       options: {
         roles: facetOptions(pool, filters, applied, "roles"),
         modes: facetOptions(pool, filters, applied, "modes"),
         pay: facetOptions(pool, filters, applied, "pay"),
       },
     };
-  }, [fresh, older, filters, applied]);
+  }, [jobs, fresh, older, filters, applied]);
 
   const groups = useMemo(() => groupJobs(view.visible, filters.sort, now, timeZone), [view.visible, filters.sort, now, timeZone]);
   const filtered = isFiltered(filters);
   const filterCount = activeFilterCount(filters);
 
   const panel = (
-    <FilterPanel filters={filters} onChange={update} options={view.options} scamCount={view.totalScams} />
+    <FilterPanel
+      filters={filters}
+      onChange={update}
+      options={view.options}
+      scamCount={view.totalScams}
+      appliedCount={view.appliedCount}
+    />
   );
 
   return (

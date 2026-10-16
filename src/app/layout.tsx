@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
+import { AccountLayer } from "@/components/account/AccountLayer";
 import { SiteFooter } from "@/components/SiteFooter";
+import { googleSignInEnabled } from "@/lib/auth";
 import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -57,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </a>
         <div className="flex-1">{children}</div>
         <SiteFooter />
+        <AccountLayer googleEnabled={googleSignInEnabled()} />
         <Analytics />
       </body>
     </html>
