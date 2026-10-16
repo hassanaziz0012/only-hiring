@@ -111,7 +111,7 @@ export default function AboutPage() {
                 <h3 className="text-lead font-bold">Scam scores</h3>
                 <p className="mt-2 max-w-[56ch]">
                   Every post gets a score from 0 to 1. Signs that raise it include upfront fees, Telegram-only contact,
-                  requests to rent your account, and payment in crypto. Posts scoring {SCAM_WARN_THRESHOLD} or more carry
+                  and requests to rent your account. Posts scoring {SCAM_WARN_THRESHOLD} or more carry
                   a warning; posts scoring {SCAM_HIDE_THRESHOLD} or more are hidden unless you choose to see them.
                 </p>
               </div>
