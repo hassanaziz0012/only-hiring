@@ -23,6 +23,24 @@ function Fact({ term, children }: { term: string; children: React.ReactNode }) {
   );
 }
 
+/** A smaller, outlined link to Reddit, for the apply box's secondary actions. */
+function SecondaryRedditLink({ href, label, detail }: { href: string; label: string; detail: string }) {
+  return (
+    <a
+      className="inline-flex min-h-11 flex-1 items-center justify-center px-3 text-center text-small font-bold shadow-[inset_0_0_0_2px_currentColor] transition-colors duration-150 hover:bg-mint-ink hover:text-mint"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {label}
+      <span className="sr-only">
+        {" "}
+        ({detail}, opens in a new tab)
+      </span>
+    </a>
+  );
+}
+
 function scoreText(score: number) {
   return score.toFixed(2).replace(/0$/, "");
 }
@@ -31,6 +49,9 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
   const pay = formatPay(job);
   const warning = scamWarningLabel(job);
   const notStated = <span className="font-normal text-muted">Not stated</span>;
+  // Only link names Reddit could have produced; deleted accounts show up as "[deleted]".
+  const profileUrl = job.author && /^[\w-]+$/.test(job.author) ? `https://www.reddit.com/user/${job.author}` : null;
+  const communityUrl = /^\w+$/.test(job.subreddit) ? `https://www.reddit.com/r/${job.subreddit}` : null;
 
   return (
     <div className="pt-4 pb-24 md:pt-8 md:pb-36">
@@ -134,7 +155,10 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
             <h2 id="original-title" className="text-body font-bold">
               The original post
             </h2>
-            <blockquote className="mt-3 max-w-[62ch] text-lead">&ldquo;{job.redditTitle}&rdquo;</blockquote>
+            <blockquote className="mt-3 max-w-[62ch]">
+              <p className="text-lead">&ldquo;{job.redditTitle}&rdquo;</p>
+              {job.bodyExcerpt && <p className="mt-2 line-clamp-3">{job.bodyExcerpt}</p>}
+            </blockquote>
             <p className="mt-3 text-body text-muted">
               {job.author ? <>Posted by u/{job.author}</> : "Posted"} in r/{job.subreddit}
               {job.flair && <>, flaired &ldquo;{job.flair}&rdquo;</>}.
@@ -150,6 +174,14 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
               the full post first.
             </p>
             <RedditLink className="btn mt-6 w-full" href={job.redditUrl} />
+            {(profileUrl || communityUrl) && (
+              <div className="mt-2 flex gap-2">
+                {profileUrl && <SecondaryRedditLink href={profileUrl} label="View user profile" detail={`u/${job.author}`} />}
+                {communityUrl && (
+                  <SecondaryRedditLink href={communityUrl} label="View community" detail={`r/${job.subreddit}`} />
+                )}
+              </div>
+            )}
             <div className="mt-3">
               <AppliedToggle id={job.id} title={job.jobTitle} size="large" />
             </div>

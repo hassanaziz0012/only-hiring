@@ -51,7 +51,14 @@ export default async function Home() {
         </section>
       </div>
 
-      <main id="main">{result.ok ? <JobBoard jobs={result.jobs} fetchedAt={result.fetchedAt} /> : <DataError />}</main>
+      <main id="main">
+        {result.ok ? (
+          // The list never shows post bodies, so leave them out of the page payload.
+          <JobBoard jobs={result.jobs.map((job) => ({ ...job, bodyExcerpt: null }))} fetchedAt={result.fetchedAt} />
+        ) : (
+          <DataError />
+        )}
+      </main>
     </>
   );
 }

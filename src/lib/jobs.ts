@@ -11,6 +11,7 @@ export type JobRow = {
   reddit_title: unknown;
   author: unknown;
   flair: unknown;
+  body_excerpt: unknown;
   posted_at: unknown;
   job_title: unknown;
   summary: unknown;
@@ -38,6 +39,8 @@ export type Job = {
   redditTitle: string;
   author: string | null;
   flair: string | null;
+  /** The opening of the post body as plain text, cut to a few hundred characters by the pipeline. */
+  bodyExcerpt: string | null;
   /** ISO timestamp, or null when the post time is unknown. */
   postedAt: string | null;
   jobTitle: string;
@@ -66,6 +69,7 @@ export const JOB_COLUMNS = [
   "reddit_title",
   "author",
   "flair",
+  "body_excerpt",
   "posted_at",
   "job_title",
   "summary",
@@ -143,6 +147,7 @@ export function parseJobRow(row: JobRow): Job | null {
     redditTitle,
     author: text(row.author),
     flair: text(row.flair),
+    bodyExcerpt: text(row.body_excerpt),
     postedAt: isoDate(row.posted_at),
     jobTitle: text(row.job_title) ?? redditTitle,
     summary: text(row.summary) ?? "",
