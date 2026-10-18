@@ -23,7 +23,7 @@ const STEPS = [
   },
   {
     title: "Publish",
-    body: "Only hiring posts reach this site, and reposts are collapsed into one. Post bodies aren't stored: you see our summary and a link to the original, where you apply.",
+    body: "Only hiring posts reach this site, and reposts are collapsed into one. We keep only a post's opening lines: you see our summary and a link to the original, where you apply.",
   },
 ];
 
@@ -144,8 +144,8 @@ export default function AboutPage() {
               <div>
                 <h3 className="text-lead font-bold">Deleted posts</h3>
                 <p className="mt-2">
-                  If a post is deleted or removed on Reddit, it can stay listed here for a while and its link may go
-                  nowhere.
+                  If a post is deleted or removed on Reddit, it comes off this site the next time the pipeline runs.
+                  Older posts aren&apos;t re-checked, so their links may go nowhere.
                 </p>
               </div>
               <div>

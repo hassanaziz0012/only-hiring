@@ -19,7 +19,7 @@ About three in four posts on subreddits like r/forhire, r/slavelabour or r/Desig
 
 - **Collect.** On a schedule, the pipeline reads the newest posts from about 19 hiring subreddits. Posts tagged `[For Hire]` or `[Offer]` are skipped.
 - **Grade.** A language model decides whether each post is hiring, writes a summary, extracts pay, skills and location, and gives it a scam score from 0 to 1.
-- **Publish.** Only hiring posts are written to the database. Post bodies are never stored; the site shows its own summary and links to Reddit.
+- **Publish.** Only hiring posts are written to the database. Of each post's body, only the opening lines (about 320 characters) are stored; the site shows its own summary and links to Reddit for the rest. Jobs whose Reddit post was deleted or removed are taken off the board.
 
 **The scraper and grader are not part of this repository.** A separate, private pipeline collects and grades posts on a schedule and writes them to the database. This repo is only the website, and it only ever reads from the database.
 
@@ -110,13 +110,13 @@ The art direction was chosen with the `frontend-design` and `taste-skill` design
 
 ## Known limitations
 
-- **Deleted or removed Reddit posts are not detected.** The pipeline doesn't re-check whether a post still exists, so a job can stay listed with a dead link until it ages out.
+- **Deleted posts linger until the next pipeline run.** Each run re-checks the jobs from the last 14 days and removes any whose Reddit post was deleted or removed. Older jobs aren't re-checked, so their links can go dead.
 - **Pay is not converted.** Amounts stay in the post's currency. Sorting by pay groups jobs by pay type and currency instead of comparing across them.
 - **Grades can be wrong.** Summaries, fields and scam scores come from a language model. The site says so and asks visitors to verify posts on Reddit.
 
 ## Legal
 
-This project is not affiliated with, endorsed by or sponsored by Reddit, Inc. Reddit is a trademark of Reddit, Inc. Reddit post bodies are not stored or shown; every listing links to its original post. Removal requests go to the contact shown in the site footer.
+This project is not affiliated with, endorsed by or sponsored by Reddit, Inc. Reddit is a trademark of Reddit, Inc. Only the opening lines of each Reddit post are stored and shown; every listing links to its original post. Removal requests go to the contact shown in the site footer.
 
 ## License
 
