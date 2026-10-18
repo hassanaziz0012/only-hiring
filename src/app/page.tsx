@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BackToTop } from "@/components/BackToTop";
 import { JobBoard } from "@/components/board/JobBoard";
 import { DataError } from "@/components/DataError";
 import { ExactTime } from "@/components/RelativeTime";
@@ -59,6 +60,7 @@ export default async function Home() {
           <DataError />
         )}
       </main>
+      <BackToTop />
     </>
   );
 }
