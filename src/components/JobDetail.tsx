@@ -12,6 +12,7 @@ import {
 } from "@/lib/labels";
 import { AppliedToggle } from "./AppliedToggle";
 import { RedditLink } from "./RedditLink";
+import { ScamScore, scoreText } from "./ScamScore";
 import { ExactTime, RelativeTime } from "./RelativeTime";
 
 function Fact({ term, children }: { term: string; children: React.ReactNode }) {
@@ -39,10 +40,6 @@ function SecondaryRedditLink({ href, label, detail }: { href: string; label: str
       </span>
     </a>
   );
-}
-
-function scoreText(score: number) {
-  return score.toFixed(2).replace(/0$/, "");
 }
 
 export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
@@ -79,7 +76,8 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
           )}
 
           {warning && job.scamScore != null && (
-            <section className="mt-10 bg-pink p-5 text-pink-ink md:p-7" aria-labelledby="scam-title">
+            <section className="mt-10 flow-root bg-pink p-5 text-pink-ink md:p-7" aria-labelledby="scam-title">
+              <ScamScore score={job.scamScore} />
               <h2 id="scam-title" className="text-lead font-bold">
                 {warning}
               </h2>
