@@ -21,7 +21,7 @@ export function SiteHeader() {
           </li>
           {SOURCE_URL && (
             <li className="hidden sm:block">
-              <a href={SOURCE_URL} className="link">
+              <a href={SOURCE_URL} className="link" target="_blank" rel="noopener noreferrer">
                 Source
               </a>
             </li>
