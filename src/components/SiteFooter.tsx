@@ -41,7 +41,7 @@ export function SiteFooter() {
               </li>
               {SOURCE_URL && (
                 <li>
-                  <a href={SOURCE_URL} className="link">
+                  <a href={SOURCE_URL} className="link" target="_blank" rel="noopener noreferrer">
                     Source code
                   </a>
                 </li>
