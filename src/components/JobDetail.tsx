@@ -53,7 +53,7 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
 
   return (
     <div className="pt-4 pb-24 md:pt-8 md:pb-36">
-      <Link href="/" className="link text-body">
+      <Link href="/" className="link tap text-body">
         Back to all jobs
       </Link>
 

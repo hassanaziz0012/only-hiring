@@ -68,7 +68,7 @@ export const JobItem = memo(function JobItem({
 
       <div className="mt-1 flex flex-col gap-x-8 gap-y-1 sm:flex-row sm:items-baseline sm:justify-between">
         <Heading id={`job-${job.id}`} className="text-lead font-bold tracking-[-0.02em] text-balance">
-          <Link href={`/jobs/${job.id}`} className="decoration-accent decoration-[0.08em] underline-offset-[0.18em] hover:underline">
+          <Link href={`/jobs/${job.id}`} className="tap decoration-accent decoration-[0.08em] underline-offset-[0.18em] hover:underline">
             {job.jobTitle}
           </Link>
         </Heading>

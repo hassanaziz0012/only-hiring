@@ -16,7 +16,7 @@ export function SiteHeader() {
       <nav aria-label="Site">
         <ul className="flex items-center gap-3 text-body min-[22.5rem]:gap-5">
           <li>
-            <Link href="/about" className="link">
+            <Link href="/about" className="link tap">
               {/* The full label doesn't fit beside the other links on phones narrower than 360px. */}
               <span className="min-[22.5rem]:hidden">About</span>
               <span className="hidden min-[22.5rem]:inline">How it works</span>
@@ -24,7 +24,7 @@ export function SiteHeader() {
           </li>
           {SOURCE_URL && (
             <li className="hidden sm:block">
-              <a href={SOURCE_URL} className="link" target="_blank" rel="noopener noreferrer">
+              <a href={SOURCE_URL} className="link tap" target="_blank" rel="noopener noreferrer">
                 Source
               </a>
             </li>

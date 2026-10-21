@@ -21,7 +21,7 @@ export function FeedbackNav() {
       {/* Bolder, with an accent underline: the app is new and feedback is the thing we most want people to find. */}
       <button
         type="button"
-        className="link font-bold decoration-accent decoration-2"
+        className="link tap font-bold decoration-accent decoration-2"
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
       >

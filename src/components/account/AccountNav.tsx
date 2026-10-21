@@ -10,7 +10,7 @@ export function AccountNav() {
   return (
     <button
       type="button"
-      className={`link ${isPending ? "invisible" : ""}`}
+      className={`link tap ${isPending ? "invisible" : ""}`}
       aria-haspopup="dialog"
       onClick={() => openAccountDialog(signedIn ? "account" : "signin")}
     >

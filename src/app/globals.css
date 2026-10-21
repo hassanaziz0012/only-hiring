@@ -209,6 +209,14 @@ body {
     text-decoration-color: var(--accent);
   }
 
+  /* Grows a small link or button's tap area to at least 44px tall without moving anything: an inline
+     element's padding doesn't affect layout, and the negative margin cancels it on inline-blocks. */
+  .tap {
+    --tap-pad: max(0px, calc((2.75rem - 1em) / 2));
+    padding-block: var(--tap-pad);
+    margin-block: calc(var(--tap-pad) * -1);
+  }
+
   .chip {
     display: inline-flex;
     align-items: center;

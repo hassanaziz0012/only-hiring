@@ -28,25 +28,25 @@ export function SiteFooter() {
             </section>
           )}
           <nav className="md:col-span-3 md:col-start-10" aria-label="Footer">
-            <ul className="space-y-2 text-lead font-bold tracking-tight">
+            <ul className="space-y-4 text-lead font-bold tracking-tight">
               <li>
-                <Link href="/" className="link">
+                <Link href="/" className="link tap">
                   All jobs
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="link">
+                <Link href="/about" className="link tap">
                   How it works
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="link">
+                <Link href="/privacy" className="link tap">
                   Privacy
                 </Link>
               </li>
               {SOURCE_URL && (
                 <li>
-                  <a href={SOURCE_URL} className="link" target="_blank" rel="noopener noreferrer">
+                  <a href={SOURCE_URL} className="link tap" target="_blank" rel="noopener noreferrer">
                     Source code
                   </a>
                 </li>
