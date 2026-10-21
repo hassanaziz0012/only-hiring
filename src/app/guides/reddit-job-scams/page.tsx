@@ -2,60 +2,62 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ProseSection as Section } from "@/components/ProseSection";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getJobs } from "@/lib/db";
+import { DataError } from "@/components/DataError";
+import { getJobs, getSubredditStats } from "@/lib/db";
 import { hasScamWarning, isExpired, isLikelyScam } from "@/lib/jobs";
 import { guideGraph, JsonLd } from "@/lib/jsonld";
-import {
-  FLAG_KINDS,
-  OTHER_SUBREDDITS,
-  SCAM_GUIDE_PATH,
-  SCAM_GUIDE_UPDATED,
-  SNAPSHOT,
-  SUBREDDITS,
-} from "@/lib/scam-report";
+import { SCAM_GUIDE_PATH, SCAM_GUIDE_PUBLISHED, scamReport } from "@/lib/scam-report";
 import { EXPIRY_DAYS, MAKER, SCAM_HIDE_THRESHOLD, SCAM_WARN_THRESHOLD, SITE_NAME } from "@/lib/site";
+import { COLLECTED_SINCE, statsFor, type FlagKind } from "@/lib/subreddits";
 
-const headline = `Reddit job scams: what we found in ${SNAPSHOT.hiring} hiring posts`;
-const description = `How often scams turn up on Reddit's job subreddits, the warning signs we saw most, and what to check before you reply. From ${SNAPSHOT.hiring} hiring posts we graded.`;
+function texts(hiring: number | null) {
+  const from = hiring ? ` in ${hiring} hiring posts` : "";
+  return {
+    headline: `Reddit job scams: what we found${from}`,
+    description: `How often scams turn up on Reddit's job subreddits, the warning signs we saw most, and what to check before you reply.${hiring ? ` From ${hiring} hiring posts we graded.` : ""}`,
+  };
+}
 
-export const metadata: Metadata = {
-  title: { absolute: headline },
-  description,
-  alternates: { canonical: SCAM_GUIDE_PATH },
-  // A page-level openGraph replaces the inherited one, so the shared fields are listed again.
-  openGraph: {
-    type: "article",
-    siteName: SITE_NAME,
-    title: headline,
+export async function generateMetadata(): Promise<Metadata> {
+  const stats = await getSubredditStats();
+  const report = stats.ok ? scamReport(stats.subs) : null;
+  const { headline, description } = texts(report?.totals.hiring || null);
+  const modified = (stats.ok && stats.changedAt) || SCAM_GUIDE_PUBLISHED;
+  return {
+    title: { absolute: headline },
     description,
-    url: SCAM_GUIDE_PATH,
-    locale: "en_GB",
-    publishedTime: SCAM_GUIDE_UPDATED,
-    modifiedTime: SCAM_GUIDE_UPDATED,
-    images: ["/opengraph-image"],
-  },
-  twitter: { card: "summary_large_image", title: headline, description, images: ["/opengraph-image"] },
-};
+    alternates: { canonical: SCAM_GUIDE_PATH },
+    // A page-level openGraph replaces the inherited one, so the shared fields are listed again.
+    openGraph: {
+      type: "article",
+      siteName: SITE_NAME,
+      title: headline,
+      description,
+      url: SCAM_GUIDE_PATH,
+      locale: "en_GB",
+      publishedTime: SCAM_GUIDE_PUBLISHED,
+      modifiedTime: modified,
+      images: ["/opengraph-image"],
+    },
+    twitter: { card: "summary_large_image", title: headline, description, images: ["/opengraph-image"] },
+  };
+}
 
-const pct = (part: number, whole: number) => `${Math.round((part / whole) * 100)}%`;
+const pct = (part: number, whole: number) => `${whole > 0 ? Math.round((part / whole) * 100) : 0}%`;
 
-const updatedLabel = new Date(`${SCAM_GUIDE_UPDATED}T12:00:00Z`).toLocaleDateString("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
+const dateLabel = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
-const FLAG_NOTES: Record<(typeof FLAG_KINDS)[number]["kind"], string> = {
-  "Vague work, no details":
+const FLAG_NOTES: Record<FlagKind, string> = {
+  vague:
     "No task, no deliverables, sometimes no role at all. Often it's just a lazy post, but it's also how scams open: the details only arrive in a DM.",
-  "Pay far below the work":
+  lowPay:
     "$2 an hour for social media work across several platforms, $4 an hour for a whole shift on a live video call, $200 to illustrate an entire graphic novel.",
-  "Free work as a test or contest":
+  freeWork:
     "A 4,000-word writing sample in the application form, a 48-hour build challenge where only the top three teams get paid, a character design contest that hands the winners' rights to the studio.",
-  "Pay far above the work":
+  highPay:
     "Big money for trivial tasks, like half of every payment you “handle”. When pay looks too good for the effort, find out why before you reply.",
-  "Handling money or trading":
+  money:
     "Receiving payments and passing them on, or promoting a forex trading group. These are the posts that can get you into legal trouble, not just cost you time.",
 };
 
@@ -103,19 +105,33 @@ async function LiveCount() {
   );
 }
 
-const TILES = [
-  { value: SNAPSHOT.graded, label: "posts graded" },
-  { value: SNAPSHOT.hiring, label: "were hiring" },
-  { value: SNAPSHOT.warned, label: "carried a scam warning" },
-  { value: SNAPSHOT.likely, label: "scored as likely scams" },
-];
+export default async function ScamGuidePage() {
+  const stats = await getSubredditStats();
+  if (!stats.ok || stats.subs.length === 0) {
+    return (
+      <>
+        <SiteHeader />
+        <main id="main" className="shell pt-10 pb-28 md:pt-16 md:pb-40">
+          <h1 className="display">reddit job scams</h1>
+          <DataError />
+        </main>
+      </>
+    );
+  }
 
-export default function ScamGuidePage() {
-  const s = SNAPSHOT;
-  const sub = (name: string) => SUBREDDITS.find((r) => r.sub === name)!;
-  const forhire = sub("forhire");
-  const slavelabour = sub("slavelabour");
-  const ddc = sub("DoneDirtCheap");
+  const report = scamReport(stats.subs);
+  const s = report.totals;
+  const { headline, description } = texts(s.hiring);
+  const updated = stats.changedAt ?? SCAM_GUIDE_PUBLISHED;
+  const forhire = statsFor(stats.subs, "forhire");
+  const slavelabour = statsFor(stats.subs, "slavelabour");
+  const ddc = statsFor(stats.subs, "DoneDirtCheap");
+  const tiles = [
+    { value: s.graded, label: "posts graded" },
+    { value: s.hiring, label: "were hiring" },
+    { value: s.warned, label: "carried a scam warning" },
+    { value: s.likely, label: "scored as likely scams" },
+  ];
 
   return (
     <>
@@ -133,11 +149,11 @@ export default function ScamGuidePage() {
               {MAKER.name}
               <span className="sr-only"> (opens in a new tab)</span>
             </a>
-            . Figures from posts collected in October 2026. Updated {updatedLabel}.
+            . Figures from every post collected since {COLLECTED_SINCE}, updated {dateLabel(updated)}.
           </p>
 
           <ul className="mt-14 grid grid-cols-2 gap-3 md:mt-20 lg:grid-cols-4">
-            {TILES.map((tile) => (
+            {tiles.map((tile) => (
               <li key={tile.label} className="bg-surface px-5 py-6">
                 <span className="block text-[clamp(2.5rem,6vw,4rem)] leading-none font-bold tabular-nums">
                   {tile.value}
@@ -151,8 +167,8 @@ export default function ScamGuidePage() {
             <Section id="short" title="The short version">
               <p>
                 Outright scams were rare. Of {s.hiring} hiring posts, {s.likely} ({pct(s.likely, s.hiring)}) scored as
-                likely scams, and {s.warned} ({pct(s.warned, s.hiring)}, about one in seven) carried a warning of any
-                kind. Most, {s.clean} of {s.hiring}, showed no warning signs at all.
+                likely scams, and {s.warned} ({pct(s.warned, s.hiring)}) carried a warning of any kind.{" "}
+                {s.clean * 2 > s.hiring ? "Most" : "Many"}, {s.clean} of {s.hiring}, showed no warning signs at all.
               </p>
               <p>
                 The more common problem is exploitation: real posts that ask for free work, pay far below what the work
@@ -167,13 +183,13 @@ export default function ScamGuidePage() {
                 number of posts showing each:
               </p>
               <ul className="space-y-6">
-                {FLAG_KINDS.map((flag) => (
+                {report.flagKinds.map((flag) => (
                   <li key={flag.kind} className="grid grid-cols-[3.5rem_1fr] gap-x-4">
                     <span className="row-span-2 text-lead leading-tight font-bold tabular-nums">
                       {flag.posts}
                       <span className="sr-only"> posts:</span>
                     </span>
-                    <h3 className="font-bold">{flag.kind}</h3>
+                    <h3 className="font-bold">{flag.label}</h3>
                     <p className="mt-1">{FLAG_NOTES[flag.kind]}</p>
                   </li>
                 ))}
@@ -238,10 +254,10 @@ export default function ScamGuidePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {SUBREDDITS.map((row) => (
-                      <tr key={row.sub} className="border-b border-surface-2">
+                    {report.subreddits.map((row) => (
+                      <tr key={row.subreddit} className="border-b border-surface-2">
                         <th scope="row" className="py-2 pr-4 font-normal">
-                          r/{row.sub}
+                          r/{row.subreddit}
                         </th>
                         <td className="py-2 pr-4 text-right">{row.hiring}</td>
                         <td className="py-2 pr-4 text-right">{row.warned}</td>
@@ -250,31 +266,42 @@ export default function ScamGuidePage() {
                     ))}
                     <tr>
                       <th scope="row" className="py-2 pr-4 font-normal text-muted">
-                        {OTHER_SUBREDDITS.count} others
+                        {report.others.count} others
                       </th>
-                      <td className="py-2 pr-4 text-right">{OTHER_SUBREDDITS.hiring}</td>
-                      <td className="py-2 pr-4 text-right">{OTHER_SUBREDDITS.warned}</td>
-                      <td className="py-2 text-right">{OTHER_SUBREDDITS.likely}</td>
+                      <td className="py-2 pr-4 text-right">{report.others.hiring}</td>
+                      <td className="py-2 pr-4 text-right">{report.others.warned}</td>
+                      <td className="py-2 text-right">{report.others.likely}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-              <h3 className="pt-4 font-bold">Is r/forhire safe?</h3>
-              <p>
-                Of {forhire.hiring} hiring posts on r/forhire, {forhire.warned} carried a warning and{" "}
-                {forhire.likely === 0 ? "none" : forhire.likely} scored as likely scams. Most of the subreddit is people
-                offering their own services; we skip those posts before grading.
-              </p>
-              <h3 className="pt-4 font-bold">Is r/slavelabour legit?</h3>
-              <p>
-                The posts we saw were mostly genuine: of {slavelabour.hiring} hiring posts, {slavelabour.warned} carried a
-                warning and {slavelabour.likely === 0 ? "none" : slavelabour.likely} scored as likely scams. It&apos;s a
-                subreddit for small, cheap tasks, so expect low pay rather than fraud.
-              </p>
-              <p>
-                The same goes for r/DoneDirtCheap: {ddc.warned} of its {ddc.hiring} hiring posts carried a warning, and
-                every one was for pay far below the work, which is what the name promises.
-              </p>
+              {forhire && (
+                <>
+                  <h3 className="pt-4 font-bold">Is r/forhire safe?</h3>
+                  <p>
+                    Of {forhire.hiring} hiring posts on r/forhire, {forhire.warned} carried a warning and{" "}
+                    {forhire.likely === 0 ? "none" : forhire.likely} scored as likely scams. Most of the subreddit is
+                    people offering their own services; we skip those posts before grading.
+                  </p>
+                </>
+              )}
+              {slavelabour && (
+                <>
+                  <h3 className="pt-4 font-bold">Is r/slavelabour legit?</h3>
+                  <p>
+                    Of {slavelabour.hiring} hiring posts, {slavelabour.warned} carried a warning and{" "}
+                    {slavelabour.likely === 0 ? "none" : slavelabour.likely} scored as likely scams. It&apos;s a
+                    subreddit for small, cheap tasks, so expect low pay rather than fraud.
+                  </p>
+                </>
+              )}
+              {ddc && (
+                <p>
+                  The same goes for r/DoneDirtCheap, where the risk is the pay: {ddc.flags.lowPay} of its {ddc.hiring}{" "}
+                  hiring posts were flagged for pay far below the work, which is what the name promises, and{" "}
+                  {ddc.warned} scored high enough for a scam warning.
+                </p>
+              )}
             </Section>
 
             <Section id="checklist" title="Before you reply">
@@ -308,7 +335,8 @@ export default function ScamGuidePage() {
 
             <Section id="method" title="How we got these numbers">
               <p>
-                The figures come from {s.graded} posts collected from 18 job subreddits in October 2026. Posts tagged
+                The figures come from {s.graded} posts collected from {report.subredditCount} job subreddits since{" "}
+                {COLLECTED_SINCE}, and update as new posts come in. Posts tagged
                 [For Hire] or [Offer] were skipped before grading. A language model read each post, decided whether it
                 was hiring, scored it from 0 to 1 for scam risk using a fixed guide, and listed the warning signs it saw.
                 Reposts and crossposts count once.
@@ -323,9 +351,8 @@ export default function ScamGuidePage() {
               <p>
                 The scores are one model&apos;s judgement, and it gets some wrong in both directions. Treat a warning as
                 a reason to look closer, not a verdict. One outside check: Reddit itself later removed{" "}
-                {s.removedByReddit.warned} of the {s.warned} posts with a warning ({pct(s.removedByReddit.warned, s.warned)}),
-                against {s.removedByReddit.unwarned} of the {s.hiring - s.warned} without one (
-                {pct(s.removedByReddit.unwarned, s.hiring - s.warned)}).
+                {s.removedWarned} of the {s.warned} posts with a warning ({pct(s.removedWarned, s.warned)}), against{" "}
+                {s.removedUnwarned} of the {s.hiring - s.warned} without one ({pct(s.removedUnwarned, s.hiring - s.warned)}).
               </p>
               <p>
                 <Link href="/about" className="link font-bold">
@@ -346,7 +373,9 @@ export default function ScamGuidePage() {
           </Link>
         </div>
       </main>
-      <JsonLd data={guideGraph({ path: SCAM_GUIDE_PATH, headline, description, updated: SCAM_GUIDE_UPDATED })} />
+      <JsonLd
+        data={guideGraph({ path: SCAM_GUIDE_PATH, headline, description, published: SCAM_GUIDE_PUBLISHED, updated })}
+      />
     </>
   );
 }

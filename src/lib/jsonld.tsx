@@ -57,8 +57,14 @@ export function homeCollection(jobs: Job[]): Node {
   };
 }
 
-/** A guide: an Article by the maker, plus its breadcrumb. `updated` is a YYYY-MM-DD date. */
-export function guideGraph(guide: { path: string; headline: string; description: string; updated: string }): Node[] {
+/** A guide: an Article by the maker, plus its breadcrumb. Dates are ISO dates or timestamps. */
+export function guideGraph(guide: {
+  path: string;
+  headline: string;
+  description: string;
+  published: string;
+  updated: string;
+}): Node[] {
   const url = abs(guide.path);
   return [
     {
@@ -68,7 +74,7 @@ export function guideGraph(guide: { path: string; headline: string; description:
       headline: guide.headline,
       description: guide.description,
       inLanguage: "en-GB",
-      datePublished: guide.updated,
+      datePublished: guide.published,
       dateModified: guide.updated,
       author: { "@id": MAKER.id },
       publisher: { "@id": MAKER.id },

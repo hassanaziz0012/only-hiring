@@ -1,14 +1,14 @@
-// The subreddits the pipeline reads, each with a hand-written profile for its page at /r/<slug>,
-// plus a dated snapshot of what we found there. The snapshot comes from the pipeline's posts.json
-// (reposts and crossposts counted once), because the jobs table only holds hiring posts and the
-// "how much of this subreddit is hiring" figures need the rest. The live figures on each page
-// (open jobs, roles, warnings) come from the jobs table instead. Refresh the snapshot by hand.
+// The subreddits the pipeline reads, each with a hand-written profile for its page at /r/<slug>, and
+// the figures behind those pages and the guides. Two sources, both live:
+// - subreddit_stats: cumulative counts over every post the pipeline has graded, hiring or not,
+//   written by the pipeline's sync (site_stats.py). The jobs table can't give these: it only holds
+//   published hiring posts.
+// - the jobs table: what's open right now (subredditLive).
+// The profile copy is hand-written, so it avoids exact figures that would go stale.
 
 import { formatMoney } from "./format";
 import { isExpired, isLikelyScam, isNsfw, scamWarningLabel, type Job } from "./jobs";
 import { labelFor, ROLE_LABELS } from "./labels";
-
-export const SUBREDDIT_SNAPSHOT_DATE = "2026-10-21";
 
 /** The guide that ranks every subreddit here, and links to each one's page. */
 export const BEST_SUBS_PATH = "/guides/best-subreddits-for-jobs";
@@ -19,12 +19,21 @@ export const SUBREDDIT_INDEX_MIN_JOBS = 5;
 /** A median is only quoted from at least this many posts. */
 export const MIN_PAY_SAMPLE = 5;
 
+/** When the pipeline started collecting posts, for "since October 2026". */
+export const COLLECTED_SINCE = "October 2026";
+
+export const FLAG_KINDS = ["vague", "lowPay", "freeWork", "highPay", "money"] as const;
+export type FlagKind = (typeof FLAG_KINDS)[number];
+
 /**
- * Posts graded from one subreddit, after posts tagged [For Hire] or [Offer] were skipped, by what the
- * grader decided they were. `warned` and `likely` count hiring posts at the warning and hiding
- * thresholds. Pay medians are over hiring posts stating a US-dollar amount of that pay type.
+ * Every post graded from one subreddit, after posts tagged [For Hire] or [Offer] were skipped, by
+ * what the grader decided they were. Reposts count once. `clean`, `warned` and `likely` count hiring
+ * posts at a score of 0.2 or less, the warning threshold and the hiding threshold. `flags` counts hiring
+ * posts with at least one red flag of each kind. Pay medians are over the midpoints of hiring posts
+ * stating a US-dollar amount of that pay type.
  */
-export type SubredditSnapshot = {
+export type SubredditStats = {
+  subreddit: string;
   graded: number;
   hiring: number;
   discussion: number;
@@ -32,11 +41,85 @@ export type SubredditSnapshot = {
   spam: number;
   unpaid: number;
   other: number;
+  clean: number;
+  warned: number;
+  likely: number;
+  anyFlag: number;
+  flags: Record<FlagKind, number>;
+  /** Hiring posts Reddit itself later removed (spam filters, suspended accounts), with and without a warning. */
+  removedWarned: number;
+  removedUnwarned: number;
   /** Hiring posts that state a pay amount. */
   payStated: number;
   hourlyUsd: { n: number; median: number | null };
   fixedUsd: { n: number; median: number | null };
 };
+
+/** A row of the subreddit_stats table as the driver returns it. */
+export type StatsRow = Record<string, unknown>;
+
+const int = (v: unknown) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
+};
+const numOrNull = (v: unknown) => (v == null || v === "" || !Number.isFinite(Number(v)) ? null : Number(v));
+
+/** Parse a raw row. Null for a row without a subreddit, so one bad row can't break a page. */
+export function parseStatsRow(r: StatsRow): SubredditStats | null {
+  if (typeof r.subreddit !== "string" || r.subreddit === "") return null;
+  return {
+    subreddit: r.subreddit,
+    graded: int(r.graded),
+    hiring: int(r.hiring),
+    discussion: int(r.discussion),
+    forHire: int(r.for_hire),
+    spam: int(r.spam),
+    unpaid: int(r.unpaid),
+    other: int(r.other),
+    clean: int(r.clean),
+    warned: int(r.warned),
+    likely: int(r.likely),
+    anyFlag: int(r.any_flag),
+    flags: {
+      vague: int(r.flag_vague),
+      lowPay: int(r.flag_low_pay),
+      freeWork: int(r.flag_free_work),
+      highPay: int(r.flag_high_pay),
+      money: int(r.flag_money),
+    },
+    removedWarned: int(r.removed_warned),
+    removedUnwarned: int(r.removed_unwarned),
+    payStated: int(r.pay_stated),
+    hourlyUsd: { n: int(r.hourly_usd_n), median: numOrNull(r.hourly_usd_median) },
+    fixedUsd: { n: int(r.fixed_usd_n), median: numOrNull(r.fixed_usd_median) },
+  };
+}
+
+/** Stats for one subreddit, by name in any case. */
+export function statsFor(all: SubredditStats[], name: string): SubredditStats | undefined {
+  const slug = name.toLowerCase();
+  return all.find((s) => s.subreddit.toLowerCase() === slug);
+}
+
+type Counts = Omit<SubredditStats, "subreddit" | "hourlyUsd" | "fixedUsd">;
+
+/** Every count summed over the given subreddits. Medians don't sum, so they're left out. */
+export function sumStats(all: SubredditStats[]): Counts {
+  const zero: Counts = {
+    graded: 0, hiring: 0, discussion: 0, forHire: 0, spam: 0, unpaid: 0, other: 0, clean: 0, warned: 0,
+    likely: 0, anyFlag: 0, flags: { vague: 0, lowPay: 0, freeWork: 0, highPay: 0, money: 0 },
+    removedWarned: 0, removedUnwarned: 0, payStated: 0,
+  };
+  return all.reduce<Counts>((sum, s) => {
+    const next = { ...sum, flags: { ...sum.flags } };
+    for (const key of Object.keys(zero) as (keyof Counts)[]) {
+      if (key === "flags") continue;
+      next[key] = sum[key] + s[key];
+    }
+    for (const kind of FLAG_KINDS) next.flags[kind] = sum.flags[kind] + s.flags[kind];
+    return next;
+  }, zero);
+}
 
 export type SubredditGroup = "general" | "tech" | "gigs" | "creative";
 
@@ -54,7 +137,6 @@ export type SubredditProfile = {
   tips: string[];
   /** Names of related subreddits, each with a profile. */
   related: string[];
-  snapshot: SubredditSnapshot;
 };
 
 export const GROUP_LABELS: Record<SubredditGroup, string> = {
@@ -79,7 +161,6 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "Posts here usually state a rate. If one doesn't, agree on it before you start, not after.",
     ],
     related: ["hiring", "slavelabour", "DoneDirtCheap"],
-    snapshot: { graded: 23, hiring: 22, discussion: 0, forHire: 1, spam: 0, unpaid: 0, other: 0, payStated: 15, hourlyUsd: { n: 7, median: 25 }, fixedUsd: { n: 3, median: 25 } },
   },
   {
     name: "hiring",
@@ -94,7 +175,6 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "AI training and annotation jobs often start with a test. A short paid test is fair; an unpaid one that produces usable work isn't.",
     ],
     related: ["forhire", "jobbit", "RemoteJobs"],
-    snapshot: { graded: 21, hiring: 19, discussion: 0, forHire: 0, spam: 2, unpaid: 0, other: 0, payStated: 13, hourlyUsd: { n: 6, median: 19.75 }, fixedUsd: { n: 3, median: 350 } },
   },
   {
     name: "jobbit",
@@ -109,14 +189,13 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "One post we read asked applicants to complete a 48-hour build challenge, with prizes for the top three teams only. That's free work, not an interview.",
     ],
     related: ["hiring", "softwareengineerjobs", "RemoteJobs"],
-    snapshot: { graded: 17, hiring: 11, discussion: 3, forHire: 3, spam: 0, unpaid: 0, other: 0, payStated: 9, hourlyUsd: { n: 0, median: null }, fixedUsd: { n: 0, median: null } },
   },
   {
     name: "hiringpakistan",
     group: "general",
-    blurb: "Jobs in Pakistan, and remote work open to Pakistani applicants. The busiest subreddit we read.",
+    blurb: "Jobs in Pakistan, and remote work open to Pakistani applicants. One of the busiest subreddits we read.",
     about: [
-      "r/hiringpakistan had more hiring posts than any other subreddit we read. They range from on-site jobs in Lahore, Karachi and Islamabad to remote freelance work for clients abroad, and use the HIRING or TASK flair.",
+      "r/hiringpakistan is one of the busiest subreddits we read. Its hiring posts range from on-site jobs in Lahore, Karachi and Islamabad to remote freelance work for clients abroad, and use the HIRING or TASK flair.",
       "Video editing and sales roles lead, followed by customer support, marketing and scriptwriting. Pay, when it's stated, is a mix of monthly salaries in rupees and dollar rates for remote work.",
     ],
     tips: [
@@ -125,14 +204,13 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "The TASK flair is used loosely: most TASK posts we read weren't hiring at all.",
     ],
     related: ["hiring", "forhire", "slavelabour"],
-    snapshot: { graded: 81, hiring: 53, discussion: 13, forHire: 1, spam: 3, unpaid: 5, other: 6, payStated: 22, hourlyUsd: { n: 2, median: 8.5 }, fixedUsd: { n: 0, median: null } },
   },
   {
     name: "RemoteJobs",
     group: "general",
     blurb: "A big remote-work community where most posts are questions and discussion, not job ads.",
     about: [
-      "r/RemoteJobs is mostly a place to talk about remote work: where to look, which companies are real, how to get hired. Job ads are a small share. They're flaired Job Posts, but two in three posts with that flair we read weren't job ads at all.",
+      "r/RemoteJobs is mostly a place to talk about remote work: where to look, which companies are real, how to get hired. Job ads are a small share. They're flaired Job Posts, but most posts with that flair turn out not to be job ads at all.",
       "The real ads tend to be full-time, salaried roles at named companies, often open to US residents only, and you apply on the company's own site: customer success, IT and security, healthcare administration, operations.",
     ],
     tips: [
@@ -140,14 +218,13 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "Remote often means remote within one country. Check before you apply.",
     ],
     related: ["jobbit", "hiring", "remotejs"],
-    snapshot: { graded: 61, hiring: 9, discussion: 36, forHire: 6, spam: 8, unpaid: 0, other: 2, payStated: 6, hourlyUsd: { n: 1, median: 27 }, fixedUsd: { n: 0, median: null } },
   },
   {
     name: "developerjobs",
     group: "tech",
     blurb: "A developer job board where most posts are developers looking for work or asking for advice.",
     about: [
-      "Despite the name, most posts on r/developerjobs aren't jobs. In the posts we read, developers offering their services outnumbered hiring posts about three to one, and career questions came next.",
+      "Despite the name, most posts on r/developerjobs aren't jobs. Developers offering their services outnumber the hiring posts several times over, and career questions come next.",
       "The hiring posts are a mix of software, AI and mobile roles, from internships and fresh-graduate annotation work to senior contracts. Few of them state pay.",
     ],
     tips: [
@@ -155,7 +232,6 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "Founding-member and equity-only roles turn up here too. Treat them as unpaid unless there's a salary.",
     ],
     related: ["devjobs", "softwareengineerjobs", "remotejs"],
-    snapshot: { graded: 79, hiring: 11, discussion: 24, forHire: 35, spam: 6, unpaid: 1, other: 2, payStated: 3, hourlyUsd: { n: 1, median: 60 }, fixedUsd: { n: 1, median: 500 } },
   },
   {
     name: "devjobs",
@@ -170,14 +246,13 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "Fixed-price app builds can be badly underpriced. Agree the scope in writing before you quote.",
     ],
     related: ["developerjobs", "remotejs", "PythonJobs"],
-    snapshot: { graded: 10, hiring: 9, discussion: 0, forHire: 0, spam: 0, unpaid: 0, other: 1, payStated: 6, hourlyUsd: { n: 1, median: 150 }, fixedUsd: { n: 1, median: 120 } },
   },
   {
     name: "softwareengineerjobs",
     group: "tech",
-    blurb: "Mostly career talk: fewer than one post in ten was a job. The jobs are mostly remote engineering roles.",
+    blurb: "Mostly career talk, with few actual jobs. The jobs it does have are mostly remote engineering roles.",
     about: [
-      "r/softwareengineerjobs was the noisiest subreddit we read. Most posts are engineers asking about interviews, layoffs and career moves, or advertising themselves.",
+      "r/softwareengineerjobs is one of the noisiest subreddits we read. Most posts are engineers asking about interviews, layoffs and career moves, or advertising themselves.",
       "The hiring posts are mostly remote engineering roles, several of them senior, plus paid work reviewing AI-written code. Many come from agencies and recruiters posting several roles at once, with tags like [Hiring] [Remote] in the title.",
     ],
     tips: [
@@ -185,14 +260,13 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "AI code-review work is often paid per task. Ask how tasks are approved and paid before you put hours in.",
     ],
     related: ["developerjobs", "remotepython", "MachineLearningJobs"],
-    snapshot: { graded: 147, hiring: 14, discussion: 90, forHire: 30, spam: 11, unpaid: 1, other: 1, payStated: 6, hourlyUsd: { n: 1, median: 65 }, fixedUsd: { n: 0, median: null } },
   },
   {
     name: "remotepython",
     group: "tech",
     blurb: "A small board of remote Python roles, many of them AI coding and training contracts.",
     about: [
-      "r/remotepython is small: a handful of posts a week, about half of them hiring. Most of the rest are developers offering their own services.",
+      "r/remotepython is small: a handful of posts a week, and only some of them are hiring. Most of the rest are developers offering their own services.",
       "The hiring posts are remote Python contracts, often for AI companies: writing and checking code to train models, backend and DevOps work. When pay is stated, it's usually a high hourly rate or a monthly retainer.",
     ],
     tips: [
@@ -200,12 +274,11 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "Check the country list. Several remote posts are open to certain countries only.",
     ],
     related: ["PythonJobs", "remotejs", "softwareengineerjobs"],
-    snapshot: { graded: 15, hiring: 7, discussion: 1, forHire: 5, spam: 1, unpaid: 0, other: 1, payStated: 5, hourlyUsd: { n: 2, median: 86.25 }, fixedUsd: { n: 0, median: null } },
   },
   {
     name: "PythonJobs",
     group: "tech",
-    blurb: "A Python board where developers looking for work outnumber hiring posts two to one.",
+    blurb: "A Python board where developers looking for work outnumber the hiring posts.",
     about: [
       "r/PythonJobs gets few hiring posts. Most posts we read were developers advertising themselves.",
       "The hiring posts we saw were for senior Python developers: one salaried role, and contract work evaluating AI-written code.",
@@ -215,14 +288,13 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "One post we read had been copied across several subreddits, and a commenter flagged it. Search for a sentence from a post before you apply.",
     ],
     related: ["remotepython", "developerjobs", "devjobs"],
-    snapshot: { graded: 11, hiring: 3, discussion: 0, forHire: 6, spam: 1, unpaid: 1, other: 0, payStated: 2, hourlyUsd: { n: 1, median: 95 }, fixedUsd: { n: 0, median: null } },
   },
   {
     name: "remotejs",
     group: "tech",
-    blurb: "A remote JavaScript board where spam and self-promotion take up as much room as the jobs.",
+    blurb: "A remote JavaScript board where spam and self-promotion take up a lot of room next to the jobs.",
     about: [
-      "r/remotejs is for remote JavaScript and TypeScript work. In the posts we read, spam, such as job-aggregator posts and product promotion, matched the number of real hiring posts.",
+      "r/remotejs is for remote JavaScript and TypeScript work. Spam, such as job-aggregator posts and product promotion, turns up about as often as real hiring posts.",
       "The real posts are remote contracts: full-stack and test-automation roles, plus paid studies testing AI tools. Most state an hourly rate or a project price.",
     ],
     tips: [
@@ -230,14 +302,13 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "AI testing studies can be genuine, but they're often for US residents over 18 only. Check who can apply first.",
     ],
     related: ["devjobs", "developerjobs", "remotepython"],
-    snapshot: { graded: 24, hiring: 9, discussion: 5, forHire: 1, spam: 9, unpaid: 0, other: 0, payStated: 6, hourlyUsd: { n: 3, median: 50 }, fixedUsd: { n: 2, median: 2300 } },
   },
   {
     name: "MachineLearningJobs",
     group: "tech",
     blurb: "An ML and AI board where most posts are questions, resumes and promotion. The few jobs are well paid.",
     about: [
-      "r/MachineLearningJobs is mostly about getting into machine learning: interview prep, resume reviews, and promotion for courses and job lists. About one post in six we read was hiring.",
+      "r/MachineLearningJobs is mostly about getting into machine learning: interview prep, resume reviews, and promotion for courses and job lists. Only a small share of posts are hiring.",
       "The hiring posts split between salaried ML engineering roles, some on-site in the US or China, and hourly contract work training and evaluating AI models, where the stated rates are high.",
     ],
     tips: [
@@ -245,7 +316,6 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "One post we read asked for a 996 schedule: 9am to 9pm, six days a week. Read the hours, not just the salary.",
     ],
     related: ["softwareengineerjobs", "remotepython", "developerjobs"],
-    snapshot: { graded: 57, hiring: 10, discussion: 26, forHire: 10, spam: 11, unpaid: 0, other: 0, payStated: 5, hourlyUsd: { n: 3, median: 90 }, fixedUsd: { n: 0, median: null } },
   },
   {
     name: "gameDevClassifieds",
@@ -253,15 +323,14 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
     blurb: "Paid game art, programming and audio work for indie teams, flaired by role. Mostly 2D art.",
     about: [
       "r/gameDevClassifieds is where indie game teams look for help. Flairs name both the pay and the role, like PAID - 2D Art or PAID - Programmer, and many titles carry a [PAID] tag. Unpaid and revenue-share collaborations get posted too; we don't list those.",
-      "Art dominates: more than half the hiring posts we read were for 2D art and animation, then 3D modelling, programming and sound design. Most are freelance projects, but fewer than one in four states a budget, so expect to quote.",
+      "Art dominates: most hiring posts are for 2D art and animation, then 3D modelling, programming and sound design. Most are freelance projects, but few state a budget, so expect to quote.",
     ],
     tips: [
-      "Put a portfolio link in your first message. About half the posts we read asked for one.",
+      "Put a portfolio link in your first message. Many posts ask for one.",
       "Quote per asset or per hour, and agree on revisions before you start.",
       "Ask when you'll be paid (per asset, per milestone or on delivery) and who owns the work.",
     ],
     related: ["HungryArtists", "DesignJobs", "forhire"],
-    snapshot: { graded: 63, hiring: 42, discussion: 9, forHire: 5, spam: 1, unpaid: 5, other: 1, payStated: 10, hourlyUsd: { n: 1, median: 10 }, fixedUsd: { n: 5, median: 450 } },
   },
   {
     name: "slavelabour",
@@ -276,7 +345,6 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "Some tasks ask for a free sample, like a short narration clip. Keep it short, or ask for it to be paid.",
     ],
     related: ["DoneDirtCheap", "forhire", "HungryArtists"],
-    snapshot: { graded: 21, hiring: 20, discussion: 0, forHire: 1, spam: 0, unpaid: 0, other: 0, payStated: 16, hourlyUsd: { n: 3, median: 10 }, fixedUsd: { n: 7, median: 20 } },
   },
   {
     name: "DoneDirtCheap",
@@ -291,15 +359,14 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "Read what rights you're handing over. One post offered a small fixed fee for permanent commercial use of the work.",
     ],
     related: ["slavelabour", "forhire", "hiring"],
-    snapshot: { graded: 27, hiring: 19, discussion: 1, forHire: 7, spam: 0, unpaid: 0, other: 0, payStated: 17, hourlyUsd: { n: 2, median: 3 }, fixedUsd: { n: 5, median: 30 } },
   },
   {
     name: "HungryArtists",
     group: "creative",
-    blurb: "Art commissions where every hiring post names a budget, usually a few hundred dollars.",
+    blurb: "Art commissions where hiring posts name a budget, often a few hundred dollars.",
     about: [
-      "r/HungryArtists is a commissions board: people post what they want drawn, and artists reply. Hiring posts are tagged [Hiring], and every one we read named a budget, which makes it one of the easiest places to see what work like yours is paid.",
-      "About half the requests are character art. The rest are illustrations for books, comics and games, and personal commissions, with budgets from $40 to several thousand dollars. Some requests are NSFW; we don't list those on this page.",
+      "r/HungryArtists is a commissions board: people post what they want drawn, and artists reply. Hiring posts are tagged [Hiring], and nearly all of them name a budget, which makes it one of the easiest places to see what work like yours is paid.",
+      "Character art is the most common request. The rest are illustrations for books, comics and games, and personal commissions, with budgets from $40 to several thousand dollars. Some requests are NSFW; we don't list those on this page.",
     ],
     tips: [
       "Many posts ask you to comment rather than DM, often with examples. Follow the post's instructions exactly.",
@@ -307,7 +374,6 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "Posts flaired Position Filled are closed.",
     ],
     related: ["gameDevClassifieds", "DesignJobs", "HireaWriter"],
-    snapshot: { graded: 27, hiring: 25, discussion: 0, forHire: 0, spam: 0, unpaid: 0, other: 2, payStated: 25, hourlyUsd: { n: 0, median: null }, fixedUsd: { n: 20, median: 250 } },
   },
   {
     name: "HireaWriter",
@@ -315,21 +381,20 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
     blurb: "A small board for writing work, mostly YouTube scripts. Watch for large unpaid writing tests.",
     about: [
       "r/HireaWriter is for writing jobs. Posts are flaired Hiring (General) or Hiring (Entry Level), and many posts are writers advertising themselves, which we skip, so only a few hiring posts get through each week.",
-      "Most hiring posts we read were for YouTube scripts, for history, true-crime and finance channels, paid per script. Half carried a scam warning, all for the same reason: a large unpaid writing test or rewrite.",
+      "Most hiring posts we read were for YouTube scripts, for history, true-crime and finance channels, paid per script. The scam warnings here have mostly been for one thing: a large unpaid writing test or rewrite.",
     ],
     tips: [
       "A short sample is normal. A 4,000-word sample, or rewriting the client's own content, is free work. Offer a shorter piece or a paid test.",
       "Per-script rates hide how long a script takes. Ask for the word count and how much research it needs before you agree.",
     ],
     related: ["forhire", "HungryArtists", "slavelabour"],
-    snapshot: { graded: 6, hiring: 6, discussion: 0, forHire: 0, spam: 0, unpaid: 0, other: 0, payStated: 5, hourlyUsd: { n: 1, median: 30 }, fixedUsd: { n: 0, median: null } },
   },
   {
     name: "DesignJobs",
     group: "creative",
     blurb: "Logo, UI and web design work, usually with the budget in the title.",
     about: [
-      "r/DesignJobs is for graphic and product design. Hiring posts are tagged [Hiring], and designers advertising themselves use [For Hire], which we skip. Every other post we read was a real job.",
+      "r/DesignJobs is for graphic and product design. Hiring posts are tagged [Hiring], and designers advertising themselves use [For Hire], which we skip. Nearly every other post is a real job.",
       "Logos are the most common request, followed by UI and UX for apps, web design, and logo animation. Most posts name a budget.",
     ],
     tips: [
@@ -338,7 +403,6 @@ const PROFILES: Omit<SubredditProfile, "slug">[] = [
       "Agree on how many concepts and revisions the budget covers.",
     ],
     related: ["HungryArtists", "gameDevClassifieds", "forhire"],
-    snapshot: { graded: 22, hiring: 22, discussion: 0, forHire: 0, spam: 0, unpaid: 0, other: 0, payStated: 18, hourlyUsd: { n: 3, median: 20 }, fixedUsd: { n: 10, median: 250 } },
   },
 ];
 
@@ -353,14 +417,8 @@ export function subredditProfile(name: string): SubredditProfile | undefined {
 
 export const subredditPath = (name: string) => `/r/${name.toLowerCase()}`;
 
-/** The posts we read in the snapshot, summed over every profiled subreddit. */
-export const SNAPSHOT_TOTALS = SUBREDDITS.reduce(
-  (sum, s) => ({ graded: sum.graded + s.snapshot.graded, hiring: sum.hiring + s.snapshot.hiring }),
-  { graded: 0, hiring: 0 },
-);
-
 /** The median pay, as "$250 per project" or "$25/hr", or null when the sample is too small. */
-export function typicalPay(s: SubredditSnapshot): { text: string; n: number; hourly: boolean } | null {
+export function typicalPay(s: SubredditStats): { text: string; n: number; hourly: boolean } | null {
   const { fixedUsd, hourlyUsd } = s;
   // Whichever pay type has more posts behind it, if either has enough.
   const hourly = hourlyUsd.n > fixedUsd.n;

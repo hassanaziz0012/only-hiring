@@ -3,6 +3,7 @@ import "server-only";
 import { neon } from "@neondatabase/serverless";
 import { cacheLife, cacheTag } from "next/cache";
 import { JOB_COLUMNS, parseJobRow, type Job, type JobRow } from "./jobs";
+import { parseStatsRow, type StatsRow, type SubredditStats } from "./subreddits";
 
 export const JOBS_CACHE_TAG = "jobs";
 
@@ -58,6 +59,42 @@ export async function getJobs(): Promise<JobsResult> {
     console.error("[db] could not load jobs:", redact(error instanceof Error ? `${error.name}: ${error.message}` : "unknown error"));
     cacheLife({ stale: 60, revalidate: 60, expire: 600 });
     return { ok: false, fetchedAt };
+  }
+}
+
+export type StatsResult =
+  | {
+      ok: true;
+      /** One row per subreddit the pipeline has graded posts from. */
+      subs: SubredditStats[];
+      /** When any subreddit's figures last changed (ISO), or null if there are none. */
+      changedAt: string | null;
+    }
+  | { ok: false };
+
+/**
+ * The per-subreddit figures behind the guides and subreddit pages (see lib/subreddits.ts). Cached and
+ * revalidated with the job list, so the refresh after each sync updates both.
+ */
+export async function getSubredditStats(): Promise<StatsResult> {
+  "use cache";
+  cacheTag(JOBS_CACHE_TAG);
+
+  try {
+    const url = process.env.WEB_DATABASE_URL;
+    if (!url) throw new Error("WEB_DATABASE_URL is not set");
+    const rows = (await neon(url).query("SELECT * FROM subreddit_stats")) as StatsRow[];
+    const subs = rows.map(parseStatsRow).filter((s): s is SubredditStats => s !== null);
+    const stamps = rows.map((r) =>
+      r.changed_at == null ? NaN : new Date(r.changed_at instanceof Date ? r.changed_at : String(r.changed_at)).getTime(),
+    );
+    const newest = Math.max(...stamps.filter(Number.isFinite));
+    cacheLife({ stale: 300, revalidate: 7200, expire: 86400 });
+    return { ok: true, subs, changedAt: Number.isFinite(newest) ? new Date(newest).toISOString() : null };
+  } catch (error) {
+    console.error("[db] could not load subreddit stats:", redact(error instanceof Error ? `${error.name}: ${error.message}` : "unknown error"));
+    cacheLife({ stale: 60, revalidate: 60, expire: 600 });
+    return { ok: false };
   }
 }
 

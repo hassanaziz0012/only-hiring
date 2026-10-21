@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ProseSection as Section } from "@/components/ProseSection";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getJobs } from "@/lib/db";
+import { DataError } from "@/components/DataError";
+import { getJobs, getSubredditStats } from "@/lib/db";
 import { countLabel } from "@/lib/format";
 import { hasScamWarning, isExpired, isLikelyScam } from "@/lib/jobs";
 import { guideGraph, JsonLd } from "@/lib/jsonld";
@@ -10,44 +11,60 @@ import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { EXPIRY_DAYS, MAKER, SITE_NAME } from "@/lib/site";
 import {
   BEST_SUBS_PATH,
+  COLLECTED_SINCE,
   MIN_PAY_SAMPLE,
-  SNAPSHOT_TOTALS,
-  SUBREDDIT_SNAPSHOT_DATE,
+  statsFor,
   subredditPath,
   SUBREDDITS,
+  sumStats,
   typicalPay,
+  type SubredditStats,
 } from "@/lib/subreddits";
 
+/** When the guide was first published. Its figures change with every sync. */
+const PUBLISHED = "2026-10-21";
+
 const headline = "The best subreddits for jobs, ranked by real hiring posts";
-const description = `Which of Reddit's job subreddits are actually hiring, what they pay, and which are mostly noise. From ${SNAPSHOT_TOTALS.graded} posts we read across ${SUBREDDITS.length} subreddits.`;
 
-export const metadata: Metadata = {
-  title: { absolute: "Best subreddits for jobs, ranked by real hiring posts" },
-  description,
-  alternates: { canonical: BEST_SUBS_PATH },
-  // A page-level openGraph replaces the inherited one, so the shared fields are listed again.
-  openGraph: {
-    type: "article",
-    siteName: SITE_NAME,
-    title: headline,
+const describe = (graded: number | null) =>
+  `Which of Reddit's job subreddits are actually hiring, what they pay, and which are mostly noise.${graded ? ` From ${graded} posts we read across ${SUBREDDITS.length} subreddits.` : ""}`;
+
+/** The profiled subreddits that have stats, each with its stats. */
+function withStats(all: SubredditStats[]) {
+  return SUBREDDITS.flatMap((profile) => {
+    const stats = statsFor(all, profile.name);
+    return stats && stats.graded > 0 ? [{ ...profile, stats }] : [];
+  });
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const result = await getSubredditStats();
+  const subs = result.ok ? withStats(result.subs) : [];
+  const description = describe(subs.length > 0 ? sumStats(subs.map((s) => s.stats)).graded : null);
+  return {
+    title: { absolute: "Best subreddits for jobs, ranked by real hiring posts" },
     description,
-    url: BEST_SUBS_PATH,
-    locale: "en_GB",
-    publishedTime: SUBREDDIT_SNAPSHOT_DATE,
-    modifiedTime: SUBREDDIT_SNAPSHOT_DATE,
-    images: ["/opengraph-image"],
-  },
-  twitter: { card: "summary_large_image", title: headline, description, images: ["/opengraph-image"] },
-};
+    alternates: { canonical: BEST_SUBS_PATH },
+    // A page-level openGraph replaces the inherited one, so the shared fields are listed again.
+    openGraph: {
+      type: "article",
+      siteName: SITE_NAME,
+      title: headline,
+      description,
+      url: BEST_SUBS_PATH,
+      locale: "en_GB",
+      publishedTime: PUBLISHED,
+      modifiedTime: (result.ok && result.changedAt) || PUBLISHED,
+      images: ["/opengraph-image"],
+    },
+    twitter: { card: "summary_large_image", title: headline, description, images: ["/opengraph-image"] },
+  };
+}
 
-const pct = (part: number, whole: number) => `${Math.round((part / whole) * 100)}%`;
+const pct = (part: number, whole: number) => `${whole > 0 ? Math.round((part / whole) * 100) : 0}%`;
 
-const updatedLabel = new Date(`${SUBREDDIT_SNAPSHOT_DATE}T12:00:00Z`).toLocaleDateString("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
+const dateLabel = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
 /** Where to start, by the kind of work. Subreddit names must have a profile in lib/subreddits. */
 const PICKS = [
@@ -94,7 +111,7 @@ const PICKS = [
   {
     need: "Jobs in Pakistan",
     subs: ["hiringpakistan"],
-    why: "The busiest subreddit we read, with on-site jobs in the big cities and remote work.",
+    why: "One of the busiest subreddits we read, with on-site jobs in the big cities and remote work.",
   },
 ];
 
@@ -137,21 +154,35 @@ async function openCounts() {
 }
 
 export default async function BestSubredditsPage() {
-  const live = await openCounts();
-  const ranked = [...SUBREDDITS].sort((a, b) => b.snapshot.hiring - a.snapshot.hiring || a.name.localeCompare(b.name));
-  const noisy = SUBREDDITS.filter((s) => s.snapshot.hiring / s.snapshot.graded < NOISY_SHARE).sort(
-    (a, b) => a.snapshot.hiring / a.snapshot.graded - b.snapshot.hiring / b.snapshot.graded,
+  const [live, stats] = await Promise.all([openCounts(), getSubredditStats()]);
+  const subs = stats.ok ? withStats(stats.subs) : [];
+  if (subs.length === 0) {
+    return (
+      <>
+        <SiteHeader />
+        <main id="main" className="shell pt-10 pb-28 md:pt-16 md:pb-40">
+          <h1 className="display">best subreddits for jobs</h1>
+          <DataError />
+        </main>
+      </>
+    );
+  }
+  const updated = (stats.ok && stats.changedAt) || PUBLISHED;
+  const description = describe(sumStats(subs.map((s) => s.stats)).graded);
+  const ranked = [...subs].sort((a, b) => b.stats.hiring - a.stats.hiring || a.name.localeCompare(b.name));
+  const noisy = subs.filter((s) => s.stats.hiring / s.stats.graded < NOISY_SHARE).sort(
+    (a, b) => a.stats.hiring / a.stats.graded - b.stats.hiring / b.stats.graded,
   );
   // Fixed prices first, then hourly rates, each by sample size.
-  const paid = SUBREDDITS.flatMap((s) => {
-    const pay = typicalPay(s.snapshot);
+  const paid = subs.flatMap((s) => {
+    const pay = typicalPay(s.stats);
     return pay ? [{ s, pay }] : [];
   }).sort((a, b) => Number(a.pay.hourly) - Number(b.pay.hourly) || b.pay.n - a.pay.n);
-  const all = SNAPSHOT_TOTALS;
-  const cleanest = ranked.filter((s) => s.snapshot.graded >= 20 && s.snapshot.hiring / s.snapshot.graded >= 0.9);
+  const all = sumStats(subs.map((s) => s.stats));
+  const cleanest = ranked.filter((s) => s.stats.graded >= 20 && s.stats.hiring / s.stats.graded >= 0.9);
 
   const tiles = [
-    { value: SUBREDDITS.length, label: "job subreddits" },
+    { value: subs.length, label: "job subreddits" },
     { value: all.graded, label: "posts we read" },
     { value: all.hiring, label: "were hiring" },
     ...(live ? [{ value: live.open, label: "open jobs right now" }] : []),
@@ -164,7 +195,7 @@ export default async function BestSubredditsPage() {
         <article>
           <h1 className="display">best subreddits for jobs</h1>
           <p className="mt-8 max-w-[46ch] text-lead md:mt-10">
-            We read {all.graded} posts from {SUBREDDITS.length} of Reddit&apos;s job subreddits to see which ones are
+            We read {all.graded} posts from {subs.length} of Reddit&apos;s job subreddits to see which ones are
             actually hiring. Here&apos;s where to look, depending on the work you do.
           </p>
           <p className="mt-4 text-body text-muted">
@@ -173,7 +204,7 @@ export default async function BestSubredditsPage() {
               {MAKER.name}
               <span className="sr-only"> (opens in a new tab)</span>
             </a>
-            . Figures from posts collected in October 2026. Updated {updatedLabel}.
+            . Figures from every post collected since {COLLECTED_SINCE}, updated {dateLabel(updated)}.
           </p>
 
           <ul className="mt-14 grid grid-cols-2 gap-3 md:mt-20 lg:grid-cols-4">
@@ -243,14 +274,14 @@ export default async function BestSubredditsPage() {
                   </thead>
                   <tbody>
                     {ranked.map((s) => {
-                      const pay = typicalPay(s.snapshot);
+                      const pay = typicalPay(s.stats);
                       return (
                         <tr key={s.slug} className="border-b border-surface-2">
                           <th scope="row" className="py-2 pr-4 font-normal">
                             <SubLink name={s.name} />
                           </th>
-                          <td className="py-2 pr-4 text-right">{s.snapshot.hiring}</td>
-                          <td className="py-2 pr-4 text-right">{pct(s.snapshot.hiring, s.snapshot.graded)}</td>
+                          <td className="py-2 pr-4 text-right">{s.stats.hiring}</td>
+                          <td className="py-2 pr-4 text-right">{pct(s.stats.hiring, s.stats.graded)}</td>
                           <td className="py-2 pr-4 text-right whitespace-nowrap">{pay ? pay.text : <span className="text-muted">–</span>}</td>
                           {live && <td className="py-2 text-right">{live.counts.get(s.slug) ?? 0}</td>}
                         </tr>
@@ -275,9 +306,9 @@ export default async function BestSubredditsPage() {
               <ul className="space-y-4">
                 {noisy.map((s) => (
                   <li key={s.slug}>
-                    <SubLink name={s.name} />: {s.snapshot.hiring} of {s.snapshot.graded} posts were hiring (
-                    {pct(s.snapshot.hiring, s.snapshot.graded)}). The rest were mostly{" "}
-                    {s.snapshot.discussion >= s.snapshot.forHire
+                    <SubLink name={s.name} />: {s.stats.hiring} of {s.stats.graded} posts were hiring (
+                    {pct(s.stats.hiring, s.stats.graded)}). The rest were mostly{" "}
+                    {s.stats.discussion >= s.stats.forHire
                       ? "questions and career discussion"
                       : "people offering their services without tagging them"}
                     .
@@ -345,11 +376,11 @@ export default async function BestSubredditsPage() {
               <p>
                 {SITE_NAME} collects new posts from the subreddits listed here, and skips the ones tagged [For Hire] or
                 [Offer]. A language model reads each remaining post, decides whether it&apos;s hiring, and pulls out the
-                role, pay and location. The figures above come from {all.graded} posts collected in October 2026, with
-                reposts and crossposts counted once. The &ldquo;open now&rdquo; column and the scam counts are live.
+                role, pay and location. The figures above come from all {all.graded} posts collected since {COLLECTED_SINCE},
+                with reposts and crossposts counted once, and they update as new posts come in.
               </p>
               <p>
-                The model can be wrong, and a few weeks of posts is a small sample, so take the exact numbers loosely. The
+                The model can be wrong, and some subreddits have only a handful of posts, so take the exact numbers loosely. The
                 differences between subreddits are large enough to hold up.{" "}
                 <Link href="/about" className="link font-bold">
                   How {SITE_NAME} works
@@ -362,14 +393,14 @@ export default async function BestSubredditsPage() {
 
         <div className="mt-24">
           <p className="max-w-[48ch] text-lead">
-            The board lists the hiring posts from all {SUBREDDITS.length} subreddits in one place, newest first.
+            The board lists the hiring posts from all {subs.length} subreddits in one place, newest first.
           </p>
           <Link href="/" className="btn mt-8">
             See all jobs
           </Link>
         </div>
       </main>
-      <JsonLd data={guideGraph({ path: BEST_SUBS_PATH, headline, description, updated: SUBREDDIT_SNAPSHOT_DATE })} />
+      <JsonLd data={guideGraph({ path: BEST_SUBS_PATH, headline, description, published: PUBLISHED, updated })} />
     </>
   );
 }

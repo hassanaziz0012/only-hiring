@@ -5,7 +5,7 @@ import { DataError } from "@/components/DataError";
 import { ProseSection } from "@/components/ProseSection";
 import { ExactTime } from "@/components/RelativeTime";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getJobs } from "@/lib/db";
+import { getJobs, getSubredditStats } from "@/lib/db";
 import { countLabel, formatPay } from "@/lib/format";
 import { scamWarningLabel, type Job } from "@/lib/jobs";
 import { JsonLd, subredditGraph } from "@/lib/jsonld";
@@ -14,13 +14,16 @@ import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { EXPIRY_DAYS, SITE_NAME } from "@/lib/site";
 import {
   BEST_SUBS_PATH,
+  COLLECTED_SINCE,
   isSubredditIndexable,
+  statsFor,
   subredditLive,
   subredditPath,
   subredditProfile,
   SUBREDDITS,
   typicalPay,
   type SubredditProfile,
+  type SubredditStats,
 } from "@/lib/subreddits";
 
 // Same as job pages: the whole page is static, so an unknown subreddit can still answer 404.
@@ -59,7 +62,7 @@ export async function generateMetadata({ params }: PageProps<"/r/[sub]">): Promi
   };
 }
 
-const pct = (part: number, whole: number) => `${Math.round((part / whole) * 100)}%`;
+const pct = (part: number, whole: number) => `${whole > 0 ? Math.round((part / whole) * 100) : 0}%`;
 
 const DAY = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 
@@ -109,7 +112,7 @@ function Tile({ value, label }: { value: React.ReactNode; label: string }) {
 }
 
 /** What the posts that weren't hiring were, leaving out the kinds with none. */
-function noiseBreakdown(s: SubredditProfile["snapshot"]): string {
+function noiseBreakdown(s: SubredditStats): string {
   const parts = [
     [s.discussion, "question or discussion post", "questions or discussion posts"],
     [s.forHire, "person offering their services without the tag", "people offering their services without the tag"],
@@ -133,8 +136,9 @@ export default async function SubredditPage({ params }: PageProps<"/r/[sub]">) {
   const result = await getJobs();
   const now = result.ok ? Date.parse(result.fetchedAt) : 0;
   const live = result.ok ? subredditLive(result.jobs, profile.name, now) : null;
-  const s = profile.snapshot;
-  const pay = typicalPay(s);
+  const stats = await getSubredditStats();
+  const s = stats.ok ? statsFor(stats.subs, profile.name) : undefined;
+  const pay = s ? typicalPay(s) : null;
   const name = `r/${profile.name}`;
   const redditUrl = `https://www.reddit.com/r/${profile.name}/`;
   const related = profile.related.map(subredditProfile).filter((p): p is SubredditProfile => Boolean(p));
@@ -210,15 +214,18 @@ export default async function SubredditPage({ params }: PageProps<"/r/[sub]">) {
 
           <ProseSection id="numbers" title="By the numbers">
             <ul className="grid grid-cols-2 gap-3">
-              <Tile value={pct(s.hiring, s.graded)} label="of the posts we read were hiring" />
-              <Tile value={pct(s.payStated, s.hiring)} label="of hiring posts named an amount" />
+              {s && s.graded > 0 && <Tile value={pct(s.hiring, s.graded)} label="of the posts we read were hiring" />}
+              {s && s.hiring > 0 && <Tile value={pct(s.payStated, s.hiring)} label="of hiring posts named an amount" />}
               {pay && <Tile value={pay.text} label={`median pay, from ${pay.n} posts`} />}
               {live && <Tile value={live.open.length} label="open jobs right now" />}
             </ul>
-            <p>
-              Of the {s.graded} posts we read from {name} in October 2026, {s.hiring} were hiring.{noiseBreakdown(s)}{" "}
-              Posts tagged [For Hire] or [Offer] were skipped before we read anything, so they aren&apos;t counted.
-            </p>
+            {s && s.graded > 0 && (
+              <p>
+                Of the {s.graded} posts we&apos;ve read from {name} since {COLLECTED_SINCE}, {s.hiring}{" "}
+                {s.hiring === 1 ? "was" : "were"} hiring.{noiseBreakdown(s)} Posts tagged [For Hire] or [Offer] are
+                skipped before we read anything, so they aren&apos;t counted.
+              </p>
+            )}
             {pay && (
               <p>
                 The median is over posts that gave a {pay.hourly ? "US-dollar hourly rate" : "US-dollar price for the whole job"}.
