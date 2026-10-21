@@ -13,7 +13,8 @@ import { homeCollection, JsonLd } from "@/lib/jsonld";
 const JSONLD_JOBS = 30;
 
 export const metadata: Metadata = {
-  alternates: { canonical: "/" },
+  // Declared here, not in the layout: a page's alternates replace the layout's.
+  alternates: { canonical: "/", types: { "application/rss+xml": [{ url: "/feed.xml", title: "Newest jobs" }] } },
 };
 
 export default async function Home() {

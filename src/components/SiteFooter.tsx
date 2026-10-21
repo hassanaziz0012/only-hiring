@@ -44,6 +44,11 @@ export function SiteFooter() {
                   Privacy
                 </Link>
               </li>
+              <li>
+                <a href="/feed.xml" className="link tap">
+                  RSS feed
+                </a>
+              </li>
               {SOURCE_URL && (
                 <li>
                   <a href={SOURCE_URL} className="link tap" target="_blank" rel="noopener noreferrer">
