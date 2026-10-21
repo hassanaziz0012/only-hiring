@@ -28,7 +28,7 @@ export function siteGraph(): Node[] {
       url: abs("/"),
       name: SITE_NAME,
       description: SITE_DESCRIPTION,
-      inLanguage: "en",
+      inLanguage: "en-GB",
       publisher: { "@id": MAKER.id },
     },
     // Kept short: hassandev.me publishes the full Person node under the same @id.

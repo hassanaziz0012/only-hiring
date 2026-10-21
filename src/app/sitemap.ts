@@ -3,24 +3,19 @@ import { getJobs } from "@/lib/db";
 import { isIndexable } from "@/lib/jobs";
 import { siteUrl } from "@/lib/site";
 
+// No changeFrequency or priority: Google ignores both.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
   const url = (path: string) => new URL(path, base).toString();
   const result = await getJobs();
-  const lastModified = result.ok && result.syncedAt ? result.syncedAt : undefined;
   const at = result.ok ? Date.parse(result.fetchedAt) : 0;
+  const listed = result.ok ? result.jobs.filter((job) => isIndexable(job, at)) : [];
 
   return [
-    { url: url("/"), lastModified, changeFrequency: "daily", priority: 1 },
-    { url: url("/about"), changeFrequency: "monthly", priority: 0.3 },
-    { url: url("/privacy"), changeFrequency: "yearly", priority: 0.1 },
-    ...(result.ok
-      ? result.jobs.filter((job) => isIndexable(job, at)).map((job) => ({
-          url: url(`/jobs/${job.id}`),
-          lastModified: job.postedAt ?? undefined,
-          changeFrequency: "weekly" as const,
-          priority: 0.6,
-        }))
-      : []),
+    // The homepage changes when a new job is listed, not on every sync.
+    { url: url("/"), lastModified: listed[0]?.postedAt ?? undefined },
+    { url: url("/about") },
+    { url: url("/privacy") },
+    ...listed.map((job) => ({ url: url(`/jobs/${job.id}`), lastModified: job.postedAt ?? undefined })),
   ];
 }

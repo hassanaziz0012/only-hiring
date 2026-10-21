@@ -53,7 +53,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={pilcrow.variable}>
+    <html lang="en-GB" className={pilcrow.variable}>
       <body className="flex min-h-svh flex-col">
         <a
           href="#main"
