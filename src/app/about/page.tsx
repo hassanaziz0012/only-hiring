@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { getJobs } from "@/lib/db";
 import { countLabel } from "@/lib/format";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
+import { BEST_SUBS_PATH, subredditPath, subredditProfile } from "@/lib/subreddits";
 import { hasRemovalContact, RemovalContact } from "@/components/RemovalContact";
 import {
   EXPIRY_DAYS,
@@ -65,21 +66,31 @@ async function SubredditList() {
           </h2>
           <p className="mt-5 max-w-[42ch]">
             The subreddits behind the current list, with how many listed jobs each one has. The set changes as
-            subreddits go quiet or new ones prove useful.
+            subreddits go quiet or new ones prove useful. Each has a page describing what gets posted there, and{" "}
+            <Link href={BEST_SUBS_PATH} className="link font-bold">
+              the best subreddits for jobs
+            </Link>{" "}
+            compares them.
           </p>
         </div>
         <ul className="grid content-start gap-x-10 gap-y-3 sm:grid-cols-2 lg:col-span-8 xl:grid-cols-3">
           {subs.map(([sub, n]) => (
             <li key={sub} className="flex items-baseline justify-between gap-4 bg-surface px-4 py-3">
-              <a
-                href={`https://www.reddit.com/r/${encodeURIComponent(sub)}/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="link min-w-0 truncate font-bold"
-              >
-                r/{sub}
-                <span className="sr-only"> (opens in a new tab)</span>
-              </a>
+              {subredditProfile(sub) ? (
+                <Link href={subredditPath(sub)} className="link min-w-0 truncate font-bold">
+                  r/{sub}
+                </Link>
+              ) : (
+                <a
+                  href={`https://www.reddit.com/r/${encodeURIComponent(sub)}/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link min-w-0 truncate font-bold"
+                >
+                  r/{sub}
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              )}
               <span className="shrink-0 text-small text-muted tabular-nums">{countLabel(n, "job")}</span>
             </li>
           ))}

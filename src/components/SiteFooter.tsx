@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { SITE_NAME, SOURCE_URL } from "@/lib/site";
+import { BEST_SUBS_PATH } from "@/lib/subreddits";
 import { hasRemovalContact, RemovalContact } from "./RemovalContact";
 import { Wordmark } from "./Wordmark";
 
@@ -38,6 +39,11 @@ export function SiteFooter() {
               <li>
                 <Link href="/about" className="link tap">
                   How it works
+                </Link>
+              </li>
+              <li>
+                <Link href={BEST_SUBS_PATH} className="link tap">
+                  Best subreddits for jobs
                 </Link>
               </li>
               <li>

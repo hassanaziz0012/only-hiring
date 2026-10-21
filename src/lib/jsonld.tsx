@@ -87,6 +87,49 @@ export function guideGraph(guide: { path: string; headline: string; description:
   ];
 }
 
+/** A subreddit's page: its open jobs as a list, about the subreddit itself, under the guide that ranks them. */
+export function subredditGraph(sub: {
+  path: string;
+  name: string;
+  description: string;
+  guide: { path: string; name: string };
+  jobs: Job[];
+}): Node[] {
+  const url = abs(sub.path);
+  return [
+    {
+      "@type": "CollectionPage",
+      "@id": url,
+      url,
+      name: `r/${sub.name} hiring posts`,
+      description: sub.description,
+      inLanguage: "en-GB",
+      isPartOf: { "@id": WEBSITE_ID() },
+      about: { "@type": "Thing", name: `r/${sub.name}`, sameAs: `https://www.reddit.com/r/${sub.name}/` },
+      breadcrumb: { "@id": `${url}#breadcrumb` },
+      mainEntity: {
+        "@type": "ItemList",
+        numberOfItems: sub.jobs.length,
+        itemListElement: sub.jobs.map((job, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: abs(`/jobs/${job.id}`),
+          name: job.jobTitle,
+        })),
+      },
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${url}#breadcrumb`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "All jobs", item: abs("/") },
+        { "@type": "ListItem", position: 2, name: sub.guide.name, item: abs(sub.guide.path) },
+        { "@type": "ListItem", position: 3, name: `r/${sub.name}`, item: url },
+      ],
+    },
+  ];
+}
+
 /** Job page: a WebPage about the Reddit post, plus its breadcrumb. */
 export function jobGraph(job: Job): Node[] {
   const url = abs(`/jobs/${job.id}`);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ProseSection as Section } from "@/components/ProseSection";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getJobs } from "@/lib/db";
 import { hasScamWarning, isExpired, isLikelyScam } from "@/lib/jobs";
@@ -84,17 +85,6 @@ const SCAMS = [
     body: "Jobs that pay you for signing up other people, or for promoting crypto and forex trading. The money comes from your recruits or your own deposits, not from work.",
   },
 ];
-
-function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
-  return (
-    <section className="grid gap-x-16 gap-y-4 border-t-2 border-surface-2 pt-10 lg:grid-cols-12" aria-labelledby={id}>
-      <h2 id={id} className="text-lead font-bold lg:col-span-4">
-        {title}
-      </h2>
-      <div className="max-w-[62ch] min-w-0 space-y-4 lg:col-span-8">{children}</div>
-    </section>
-  );
-}
 
 /** Today's figures from the board, so the guide's dated snapshot has a live companion. */
 async function LiveCount() {

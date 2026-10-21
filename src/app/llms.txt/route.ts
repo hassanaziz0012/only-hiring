@@ -1,4 +1,5 @@
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
+import { BEST_SUBS_PATH, SUBREDDITS, subredditPath } from "@/lib/subreddits";
 import { EXPIRY_DAYS, MAKER, SCAM_HIDE_THRESHOLD, SCAM_WARN_THRESHOLD, SITE_NAME, SOURCE_URL, siteUrl } from "@/lib/site";
 
 // llms.txt (https://llmstxt.org): a plain summary of the site for language models. Google ignores it,
@@ -20,8 +21,13 @@ export function GET() {
 - [How it works](${url("/about")}): pipeline, scam scoring, source subreddits, data policy
 - [Current jobs](${url("/")}): live list, newest first
 - [Reddit job scams](${url(SCAM_GUIDE_PATH)}): how scams on Reddit's job subreddits work, with figures from the jobs this site has graded
+- [Best subreddits for jobs](${url(BEST_SUBS_PATH)}): every subreddit the site reads, ranked by hiring posts, with the share that are hiring and median pay
 - [RSS feed](${url("/feed.xml")}): the newest open jobs
 - [Sitemap](${url("/sitemap.xml")})
+
+## Subreddits
+Each page lists the subreddit's open hiring posts, describes what gets posted there, and gives its figures.
+${SUBREDDITS.map((s) => `- [r/${s.name}](${url(subredditPath(s.name))}): ${s.blurb}`).join("\n")}
 
 ## Optional
 ${SOURCE_URL ? `- [Source code](${SOURCE_URL}): the website, MIT-licensed\n` : ""}- [Maker](${MAKER.url})

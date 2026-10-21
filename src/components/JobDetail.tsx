@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatPay } from "@/lib/format";
 import { hasScamWarning, isExpired, isLikelyScam, scamWarningLabel, type Job } from "@/lib/jobs";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
+import { subredditPath, subredditProfile } from "@/lib/subreddits";
 import { EXPIRY_DAYS } from "@/lib/site";
 import {
   APPLY_METHOD_LABELS,
@@ -66,7 +67,13 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
                 <RelativeTime iso={job.postedAt} fetchedAt={fetchedAt} />
               </span>
             )}
-            <span>r/{job.subreddit}</span>
+            {subredditProfile(job.subreddit) ? (
+              <Link href={subredditPath(job.subreddit)} className="link tap">
+                r/{job.subreddit}
+              </Link>
+            ) : (
+              <span>r/{job.subreddit}</span>
+            )}
           </p>
           <h1 id="job-title" className="head mt-4 text-balance">
             {job.jobTitle}
