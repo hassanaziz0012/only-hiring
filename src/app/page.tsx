@@ -44,8 +44,9 @@ export default async function Home() {
           </h1>
           <div className="rise mt-8 grid gap-x-10 gap-y-4 md:mt-10 md:grid-cols-12" style={{ "--delay": "260ms" } as React.CSSProperties}>
             <p className="text-lead md:col-span-7 lg:col-span-6">
-              Most posts on Reddit&apos;s hiring subreddits are people selling their own services. We read every post and
-              list only the ones that are hiring, with a link back to the original.
+              A Reddit job board with only the hiring posts. Most posts on r/forhire, r/hiring and the other job
+              subreddits are people selling their own services. We read every post, list only the ones that are hiring,
+              flag likely scams, and link back to the original.
             </p>
             {summary && <p className="self-end text-body md:col-span-5 md:text-right lg:col-span-6">{summary}</p>}
           </div>

@@ -3,7 +3,7 @@
 export const SITE_NAME = "Only Hiring";
 
 export const SITE_DESCRIPTION =
-  "Genuine hiring posts from Reddit's job subreddits. Self-promotion, discussion and likely scams are filtered out.";
+  "Hiring posts only, from r/forhire, r/hiring, r/RemoteJobs and other job subreddits. Self-promotion and spam are filtered out, and every job gets a scam score.";
 
 /**
  * Contact for removal requests, from the REMOVAL_EMAIL env var. Server-side only:

@@ -17,10 +17,13 @@ const pilcrow = localFont({
   display: "swap",
 });
 
+// Aimed at "reddit job board" and "reddit hiring posts"; the slogan stays in the H1.
+const HOME_TITLE = `Reddit job board: hiring posts only, scam-checked | ${SITE_NAME}`;
+
 export const metadata: Metadata = {
   metadataBase: siteUrl(),
   title: {
-    default: `${SITE_NAME}: Reddit job posts without the noise`,
+    default: HOME_TITLE,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -28,14 +31,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: `${SITE_NAME}: Reddit job posts without the noise`,
+    title: HOME_TITLE,
     description: SITE_DESCRIPTION,
     url: "/",
     locale: "en_GB",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME}: Reddit job posts without the noise`,
+    title: HOME_TITLE,
     description: SITE_DESCRIPTION,
   },
 };
