@@ -16,7 +16,7 @@ export async function GET() {
   const base = siteUrl();
   const url = (path: string) => new URL(path, base).toString();
   const at = result.ok ? Date.parse(result.fetchedAt) : 0;
-  // Same set search engines get: no likely scams, expired or adult posts.
+  // Same set search engines get: no likely scams, expired, adult or thin posts.
   const jobs = result.ok ? result.jobs.filter((job) => isIndexable(job, at)).slice(0, FEED_SIZE) : [];
 
   const items = jobs.map((job) => {

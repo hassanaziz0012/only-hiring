@@ -188,9 +188,21 @@ export function isNsfw(job: Job): boolean {
   return NSFW.test(job.jobTitle) || NSFW.test(job.redditTitle) || NSFW.test(job.summary);
 }
 
-/** Search engines get only the jobs the board lists by default, minus adult content. */
+const THIN_WORDS = 50;
+
+const wordCount = (s: string | null) => (s ? s.split(/\s+/).filter(Boolean).length : 0);
+
+/**
+ * Too little on the page to be worth a search result: crossposts and link posts with no body, where
+ * the details are only on Reddit, or a summary and excerpt that together run under THIN_WORDS words.
+ */
+export function isThin(job: Job): boolean {
+  return !job.bodyExcerpt || wordCount(job.summary) + wordCount(job.bodyExcerpt) < THIN_WORDS;
+}
+
+/** Search engines get only the jobs the board lists by default, minus adult content and thin pages. */
 export function isIndexable(job: Job, now: number): boolean {
-  return !isExpired(job, now) && !isLikelyScam(job) && !isNsfw(job);
+  return !isExpired(job, now) && !isLikelyScam(job) && !isNsfw(job) && !isThin(job);
 }
 
 /** Shows a warning chip, even when visible. */

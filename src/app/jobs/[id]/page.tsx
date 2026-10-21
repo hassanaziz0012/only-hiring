@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: PageProps<"/jobs/[id]">): Pro
     title: { absolute: jobPageTitles(result.jobs).get(job.id) ?? job.jobTitle },
     description,
     alternates: { canonical: `/jobs/${job.id}` },
-    // Same rule as the sitemap: likely scams, expired and adult posts stay out of search results.
+    // Same rule as the sitemap: likely scams, expired, adult and thin posts stay out of search results.
     ...(isIndexable(job, Date.parse(result.fetchedAt)) ? {} : { robots: { index: false, follow: true } }),
     // A page-level openGraph replaces the inherited one, so the shared image is listed again.
     openGraph: { type: "article", title: job.jobTitle, description, url: `/jobs/${job.id}`, images: ["/opengraph-image"] },
