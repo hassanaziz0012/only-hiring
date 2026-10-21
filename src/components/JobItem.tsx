@@ -53,10 +53,13 @@ export const JobItem = memo(function JobItem({
   const moreSkills = job.skills.length - skills.length;
   const Heading = headingLevel === 2 ? "h2" : "h3";
 
+  // content-visibility skips layout and paint for cards far off-screen; they stay in the DOM, so links,
+  // find-in-page and screen readers still reach them. 240px is a typical card height, used until a card
+  // is first drawn. It also clips like overflow, so the clip margin keeps edge buttons' focus rings visible.
   return (
     <article
       aria-labelledby={`job-${job.id}`}
-      className={`relative md:pl-24 transition-opacity duration-200 ${applied ? "opacity-60 hover:opacity-100 focus-within:opacity-100" : ""}`}
+      className={`relative [contain-intrinsic-size:auto_240px] [content-visibility:auto] [overflow-clip-margin:8px] md:pl-24 transition-opacity duration-200 ${applied ? "opacity-60 hover:opacity-100 focus-within:opacity-100" : ""}`}
     >
       <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-small text-muted">
         <span className="text-body md:absolute md:top-0 md:left-0">
