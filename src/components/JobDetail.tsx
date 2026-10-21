@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatPay } from "@/lib/format";
-import { hasScamWarning, isLikelyScam, scamWarningLabel, type Job } from "@/lib/jobs";
+import { hasScamWarning, isExpired, isLikelyScam, scamWarningLabel, type Job } from "@/lib/jobs";
+import { EXPIRY_DAYS } from "@/lib/site";
 import {
   APPLY_METHOD_LABELS,
   EMPLOYMENT_LABELS,
@@ -99,6 +100,15 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
                 </ul>
               )}
             </section>
+          )}
+
+          {isExpired(job, Date.parse(fetchedAt)) && (
+            <p className="mt-10 max-w-[62ch] bg-surface p-5 md:p-7">
+              <span className="font-bold">
+                {job.postedAt ? `Posted more than ${EXPIRY_DAYS} days ago.` : "We don't know when this was posted."}
+              </span>{" "}
+              It may already be filled. Check the original post and its comments before you reply.
+            </p>
           )}
 
           {job.summary && <p className="mt-10 max-w-[62ch] text-lead text-pretty">{job.summary}</p>}
