@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useAppliedIds } from "@/lib/applied";
 import { countLabel } from "@/lib/format";
 import { isExpired, isLikelyScam, type Job } from "@/lib/jobs";
@@ -11,6 +11,7 @@ import {
   activeFilterCount,
   DEFAULT_FILTERS,
   facetOptions,
+  filtersFromSearch,
   groupJobs,
   isFiltered,
   matches,
@@ -19,8 +20,11 @@ import {
 } from "./filters";
 import { useMinuteClock, useUrlFilters } from "./hooks";
 
+// How long typing has to pause before the search is written to the URL.
+const URL_WRITE_DELAY_MS = 200;
+
 export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }) {
-  const [filters, setFilters] = useUrlFilters();
+  const [urlFilters, setFilters] = useUrlFilters();
   const applied = useAppliedIds();
   const clock = useMinuteClock();
   // Until hydration finishes, render against the snapshot time in UTC so the HTML matches.
@@ -28,8 +32,39 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
   const timeZone = clock == null ? "UTC" : undefined;
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  const update = (patch: Partial<Filters>) => setFilters({ ...filters, ...patch });
-  const clear = () => setFilters({ ...DEFAULT_FILTERS, sort: filters.sort });
+  // The search box keeps its own state so typing never waits on the URL or the list. The list filters
+  // on a deferred copy, which React can interrupt when the next keystroke arrives.
+  const [query, setQuery] = useState(urlFilters.q);
+  const [urlQuery, setUrlQuery] = useState(urlFilters.q);
+  if (urlFilters.q !== urlQuery) {
+    // The URL changed under us (hydration, back/forward, a cleared filter): show its search.
+    setUrlQuery(urlFilters.q);
+    setQuery(urlFilters.q);
+  }
+  const deferredQuery = useDeferredValue(query);
+  const filters = useMemo(() => ({ ...urlFilters, q: deferredQuery }), [urlFilters, deferredQuery]);
+
+  const writeTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(writeTimer.current), []);
+
+  const update = (patch: Partial<Filters>) => {
+    window.clearTimeout(writeTimer.current);
+    setFilters({ ...urlFilters, q: query, ...patch });
+  };
+  const clear = () => {
+    window.clearTimeout(writeTimer.current);
+    setQuery("");
+    setFilters({ ...DEFAULT_FILTERS, sort: urlFilters.sort });
+  };
+  const search = (q: string) => {
+    setQuery(q);
+    window.clearTimeout(writeTimer.current);
+    // Read the URL when the timer fires, so a filter changed in the meantime isn't undone.
+    writeTimer.current = window.setTimeout(
+      () => setFilters({ ...filtersFromSearch(window.location.search), q }),
+      URL_WRITE_DELAY_MS,
+    );
+  };
 
   const { fresh, older } = useMemo(() => {
     const fresh: Job[] = [];
@@ -98,8 +133,8 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
                 </svg>
                 <input
                   type="search"
-                  value={filters.q}
-                  onChange={(e) => update({ q: e.target.value })}
+                  value={query}
+                  onChange={(e) => search(e.target.value)}
                   placeholder="Search titles, skills, places, subreddits"
                   className="field min-h-14 py-3 pr-4 pl-12 text-lead"
                   autoComplete="off"

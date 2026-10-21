@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { memo } from "react";
 import { exactDate, formatPay, relativeTime, shortAge } from "@/lib/format";
 import { scamWarningLabel, type Job } from "@/lib/jobs";
 import { EMPLOYMENT_LABELS, labelFor, ROLE_LABELS, SENIORITY_LABELS, WORK_MODE_LABELS } from "@/lib/labels";
@@ -25,7 +26,8 @@ export function JobAge({ postedAt, now, timeZone }: { postedAt: string | null; n
   );
 }
 
-export function JobItem({
+// Memoized so a keystroke in the board's search only re-renders the items that change.
+export const JobItem = memo(function JobItem({
   job,
   now,
   timeZone,
@@ -109,4 +111,4 @@ export function JobItem({
       </div>
     </article>
   );
-}
+});
