@@ -66,3 +66,18 @@ export async function getJob(id: string): Promise<{ ok: true; job: Job | null; f
   if (!result.ok) return { ok: false };
   return { ok: true, job: result.jobs.find((j) => j.id === id) ?? null, fetchedAt: result.fetchedAt };
 }
+
+/**
+ * Jobs first added by the most recent pipeline sync. Every sync stamps last_synced_at on all rows,
+ * so the newest stamp marks the sync, and rows first seen within a few minutes of it are new.
+ * Uncached: called right after a sync, from /api/revalidate.
+ */
+export async function getNewlySyncedJobs(): Promise<Job[]> {
+  const url = process.env.WEB_DATABASE_URL;
+  if (!url) throw new Error("WEB_DATABASE_URL is not set");
+  const rows = await neon(url).query(
+    `SELECT ${JOB_COLUMNS.join(", ")} FROM jobs
+     WHERE first_synced_at >= (SELECT max(last_synced_at) FROM jobs) - interval '15 minutes'`,
+  );
+  return (rows as JobRow[]).map(parseJobRow).filter((j): j is Job => j !== null);
+}

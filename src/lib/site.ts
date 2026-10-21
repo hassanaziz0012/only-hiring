@@ -23,6 +23,9 @@ export const MAKER = {
   id: "https://www.hassandev.me/#person",
 } as const;
 
+/** IndexNow key. Public by design: it's also served at /<key>.txt (public/) to prove we own the host. */
+export const INDEXNOW_KEY = "5881dbaabf4d1e3247e4c27afa002ff8";
+
 /** Jobs posted longer ago than this move to the collapsed "older posts" section. */
 export const EXPIRY_DAYS = 14;
 
