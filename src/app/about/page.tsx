@@ -6,10 +6,23 @@ import { countLabel } from "@/lib/format";
 import { hasRemovalContact, RemovalContact } from "@/components/RemovalContact";
 import { EXPIRY_DAYS, SCAM_HIDE_THRESHOLD, SCAM_WARN_THRESHOLD, SITE_NAME, SOURCE_URL } from "@/lib/site";
 
+const description = `How ${SITE_NAME} finds genuine hiring posts on Reddit, scores scams, and what it doesn't store.`;
+
 export const metadata: Metadata = {
   title: "How it works",
-  description: `How ${SITE_NAME} finds genuine hiring posts on Reddit, scores scams, and what it doesn't store.`,
+  description,
   alternates: { canonical: "/about" },
+  // A page-level openGraph replaces the inherited one, so the shared fields are listed again.
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: `How ${SITE_NAME} works`,
+    description,
+    url: "/about",
+    locale: "en_GB",
+    images: ["/opengraph-image"],
+  },
+  twitter: { card: "summary_large_image", title: `How ${SITE_NAME} works`, description, images: ["/opengraph-image"] },
 };
 
 const STEPS = [
