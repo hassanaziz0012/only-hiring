@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { DataError } from "@/components/DataError";
 import { JobDetail } from "@/components/JobDetail";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getJob, getJobs } from "@/lib/db";
 import { isIndexable } from "@/lib/jobs";
+
+// Make the first request for an ID the build didn't list wait for the full page instead of getting the
+// App Shell with a 200, so an unknown ID can still answer 404 (see JobPage).
+export const ensureStatic = "navigation";
 
 // Unlisted IDs never match a job, so the placeholder renders the not-found page.
 const PLACEHOLDER_ID = "_";
@@ -34,32 +37,17 @@ export async function generateMetadata({ params }: PageProps<"/jobs/[id]">): Pro
   };
 }
 
-async function Detail({ params }: { params: PageProps<"/jobs/[id]">["params"] }) {
+// Resolve the job before anything streams, so an unknown ID gets a real 404 status rather than a 200
+// with a not-found body. getJob reads the cached job list, so this is cheap.
+export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const { id } = await params;
   const result = await getJob(id);
-  if (!result.ok) return <DataError />;
-  if (!result.job) notFound();
-  return <JobDetail job={result.job} fetchedAt={result.fetchedAt} />;
-}
-
-function DetailFallback() {
-  return (
-    <div className="pt-4 pb-24 md:pt-8" aria-busy="true">
-      <p className="text-body text-muted">Loading the job…</p>
-      <div className="mt-14 h-24 max-w-2xl bg-surface" />
-      <div className="mt-8 h-40 max-w-3xl bg-surface" />
-    </div>
-  );
-}
-
-export default function JobPage({ params }: PageProps<"/jobs/[id]">) {
+  if (result.ok && !result.job) notFound();
   return (
     <>
       <SiteHeader />
       <main id="main" className="shell">
-        <Suspense fallback={<DetailFallback />}>
-          <Detail params={params} />
-        </Suspense>
+        {result.ok && result.job ? <JobDetail job={result.job} fetchedAt={result.fetchedAt} /> : <DataError />}
       </main>
     </>
   );
