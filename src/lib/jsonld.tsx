@@ -57,6 +57,36 @@ export function homeCollection(jobs: Job[]): Node {
   };
 }
 
+/** A guide: an Article by the maker, plus its breadcrumb. `updated` is a YYYY-MM-DD date. */
+export function guideGraph(guide: { path: string; headline: string; description: string; updated: string }): Node[] {
+  const url = abs(guide.path);
+  return [
+    {
+      "@type": "Article",
+      "@id": `${url}#article`,
+      url,
+      headline: guide.headline,
+      description: guide.description,
+      inLanguage: "en-GB",
+      datePublished: guide.updated,
+      dateModified: guide.updated,
+      author: { "@id": MAKER.id },
+      publisher: { "@id": MAKER.id },
+      isPartOf: { "@id": WEBSITE_ID() },
+      mainEntityOfPage: url,
+      breadcrumb: { "@id": `${url}#breadcrumb` },
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${url}#breadcrumb`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "All jobs", item: abs("/") },
+        { "@type": "ListItem", position: 2, name: guide.headline, item: url },
+      ],
+    },
+  ];
+}
+
 /** Job page: a WebPage about the Reddit post, plus its breadcrumb. */
 export function jobGraph(job: Job): Node[] {
   const url = abs(`/jobs/${job.id}`);

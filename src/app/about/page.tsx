@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getJobs } from "@/lib/db";
 import { countLabel } from "@/lib/format";
+import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { hasRemovalContact, RemovalContact } from "@/components/RemovalContact";
 import {
   EXPIRY_DAYS,
@@ -140,7 +141,11 @@ export default function AboutPage() {
                 <h3 className="text-lead font-bold">What the scores miss</h3>
                 <p className="mt-2 max-w-[56ch]">
                   The model can be wrong in both directions, and so can the summaries and pay figures. Check the
-                  original post, and never pay anyone or hand over ID to get a job.
+                  original post, and never pay anyone or hand over ID to get a job. Our{" "}
+                  <Link href={SCAM_GUIDE_PATH} className="link font-bold">
+                    guide to Reddit job scams
+                  </Link>{" "}
+                  covers the warning signs we see most.
                 </p>
               </div>
             </div>

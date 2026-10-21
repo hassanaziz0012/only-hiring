@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatPay } from "@/lib/format";
 import { hasScamWarning, isExpired, isLikelyScam, scamWarningLabel, type Job } from "@/lib/jobs";
+import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { EXPIRY_DAYS } from "@/lib/site";
 import {
   APPLY_METHOD_LABELS,
@@ -99,6 +100,11 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
                   ))}
                 </ul>
               )}
+              <p className="mt-4">
+                <Link href={SCAM_GUIDE_PATH} className="link font-bold">
+                  How Reddit job scams work
+                </Link>
+              </p>
             </section>
           )}
 
