@@ -181,6 +181,18 @@ export function isLikelyScam(job: Job): boolean {
   return job.scamScore != null && job.scamScore >= SCAM_HIDE_THRESHOLD;
 }
 
+const NSFW = /\b(nsfw|hentai|porn)/i;
+
+/** Adult content, judged from the titles and summary. The pipeline has no NSFW flag. */
+export function isNsfw(job: Job): boolean {
+  return NSFW.test(job.jobTitle) || NSFW.test(job.redditTitle) || NSFW.test(job.summary);
+}
+
+/** Search engines get only the jobs the board lists by default, minus adult content. */
+export function isIndexable(job: Job, now: number): boolean {
+  return !isExpired(job, now) && !isLikelyScam(job) && !isNsfw(job);
+}
+
 /** Shows a warning chip, even when visible. */
 export function hasScamWarning(job: Job): boolean {
   return job.scamScore != null && job.scamScore >= SCAM_WARN_THRESHOLD;
