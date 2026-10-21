@@ -39,6 +39,11 @@ export function SiteFooter() {
                   How it works
                 </Link>
               </li>
+              <li>
+                <Link href="/privacy" className="link">
+                  Privacy
+                </Link>
+              </li>
               {SOURCE_URL && (
                 <li>
                   <a href={SOURCE_URL} className="link" target="_blank" rel="noopener noreferrer">

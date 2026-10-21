@@ -16,6 +16,13 @@ export function removalEmail(): string | null {
 /** Public source repository. Set once the repo is public; links are hidden while null. */
 export const SOURCE_URL: string | null = "https://github.com/hassanaziz0012/only-hiring";
 
+/** Who builds the site. `id` is the Person node hassandev.me publishes, so search engines see one entity. */
+export const MAKER = {
+  name: "Hassan Aziz",
+  url: "https://www.hassandev.me",
+  id: "https://www.hassandev.me/#person",
+} as const;
+
 /** Jobs posted longer ago than this move to the collapsed "older posts" section. */
 export const EXPIRY_DAYS = 14;
 

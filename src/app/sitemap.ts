@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: url("/"), lastModified, changeFrequency: "daily", priority: 1 },
     { url: url("/about"), changeFrequency: "monthly", priority: 0.3 },
+    { url: url("/privacy"), changeFrequency: "yearly", priority: 0.1 },
     ...(result.ok
       ? result.jobs.filter((job) => isIndexable(job, at)).map((job) => ({
           url: url(`/jobs/${job.id}`),

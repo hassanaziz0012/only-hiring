@@ -4,7 +4,15 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { getJobs } from "@/lib/db";
 import { countLabel } from "@/lib/format";
 import { hasRemovalContact, RemovalContact } from "@/components/RemovalContact";
-import { EXPIRY_DAYS, SCAM_HIDE_THRESHOLD, SCAM_WARN_THRESHOLD, SITE_NAME, SOURCE_URL } from "@/lib/site";
+import {
+  EXPIRY_DAYS,
+  MAKER,
+  removalEmail,
+  SCAM_HIDE_THRESHOLD,
+  SCAM_WARN_THRESHOLD,
+  SITE_NAME,
+  SOURCE_URL,
+} from "@/lib/site";
 
 const description = `How ${SITE_NAME} finds genuine hiring posts on Reddit, scores scams, and what it doesn't store.`;
 
@@ -174,7 +182,11 @@ export default function AboutPage() {
                   We count page views with Vercel Web Analytics, which sets no cookies and stores no personal
                   identifiers. There are no ad trackers. Jobs you mark as applied are saved in your browser. If you create an
                   account (optional: sign in with Google, or an email and password), they&apos;re saved to it instead, so they survive
-                  cleared browser data and show up on any device. You can delete your account at any time.
+                  cleared browser data and show up on any device. You can delete your account at any time. The{" "}
+                  <Link href="/privacy" className="link font-bold">
+                    privacy policy
+                  </Link>{" "}
+                  has the details.
                 </p>
               </div>
               {hasRemovalContact() && (
@@ -200,6 +212,42 @@ export default function AboutPage() {
                   . The job-collection pipeline isn&apos;t part of it.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-28 md:mt-40" aria-labelledby="maker-title">
+          <div className="grid gap-x-16 gap-y-8 lg:grid-cols-12">
+            <h2 id="maker-title" className="head lowercase lg:col-span-4">
+              who makes this
+            </h2>
+            <div className="max-w-[60ch] space-y-5 lg:col-span-8">
+              <p className="text-lead">
+                I&apos;m{" "}
+                <a className="link font-bold" href={MAKER.url} target="_blank" rel="noopener noreferrer">
+                  {MAKER.name}
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+                , a developer. I built {SITE_NAME} because looking for work on Reddit&apos;s job subreddits is a pain.
+              </p>
+              <p>
+                The feeds are full of scam jobs and posts that go nowhere, and often half of what&apos;s there is people
+                advertising their own services. When you&apos;re the one looking for a job, none of that matters. I only
+                wanted to see the posts from people who were hiring.
+              </p>
+              <p>
+                It started as a command-line tool I used to find and apply to jobs automatically. People I shared it with
+                liked it a lot, so I turned it into this site so anyone can use it.
+              </p>
+              {removalEmail() && (
+                <p>
+                  Questions, ideas or problems? Email{" "}
+                  <a className="link font-bold" href={`mailto:${removalEmail()}`}>
+                    {removalEmail()}
+                  </a>
+                  , or use Feedback at the top of any page.
+                </p>
+              )}
             </div>
           </div>
         </section>
