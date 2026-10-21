@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { getJob, getJobs } from "@/lib/db";
 import { isIndexable } from "@/lib/jobs";
 import { jobGraph, JsonLd } from "@/lib/jsonld";
+import { jobPageTitles } from "@/lib/page-title";
 
 // Make the first request for an ID the build didn't list wait for the full page instead of getting the
 // App Shell with a 200, so an unknown ID can still answer 404 (see JobPage).
@@ -22,12 +23,13 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/jobs/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const result = await getJob(id);
-  if (!result.ok || !result.job) return { title: "Job not found", robots: { index: false } };
-  const { job } = result;
+  const result = await getJobs();
+  const job = result.ok ? result.jobs.find((j) => j.id === id) : undefined;
+  if (!result.ok || !job) return { title: "Job not found", robots: { index: false } };
   const description = job.summary.length > 200 ? `${job.summary.slice(0, 197).trimEnd()}…` : job.summary;
   return {
-    title: `${job.jobTitle} (r/${job.subreddit})`,
+    // Absolute: the site name would use a quarter of the space, and Google shows it from the WebSite JSON-LD.
+    title: { absolute: jobPageTitles(result.jobs).get(job.id) ?? job.jobTitle },
     description,
     alternates: { canonical: `/jobs/${job.id}` },
     // Same rule as the sitemap: likely scams, expired and adult posts stay out of search results.
