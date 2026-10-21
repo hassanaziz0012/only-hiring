@@ -5,6 +5,7 @@ import { JobDetail } from "@/components/JobDetail";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getJob, getJobs } from "@/lib/db";
 import { isIndexable } from "@/lib/jobs";
+import { jobGraph, JsonLd } from "@/lib/jsonld";
 
 // Make the first request for an ID the build didn't list wait for the full page instead of getting the
 // App Shell with a 200, so an unknown ID can still answer 404 (see JobPage).
@@ -47,7 +48,14 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
     <>
       <SiteHeader />
       <main id="main" className="shell">
-        {result.ok && result.job ? <JobDetail job={result.job} fetchedAt={result.fetchedAt} /> : <DataError />}
+        {result.ok && result.job ? (
+          <>
+            <JobDetail job={result.job} fetchedAt={result.fetchedAt} />
+            <JsonLd data={jobGraph(result.job)} />
+          </>
+        ) : (
+          <DataError />
+        )}
       </main>
     </>
   );

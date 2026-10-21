@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { AccountLayer } from "@/components/account/AccountLayer";
 import { SiteFooter } from "@/components/SiteFooter";
 import { googleSignInEnabled } from "@/lib/auth";
+import { JsonLd, siteGraph } from "@/lib/jsonld";
 import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteFooter />
         <AccountLayer googleEnabled={googleSignInEnabled()} />
         <Analytics />
+        <JsonLd data={siteGraph()} />
       </body>
     </html>
   );

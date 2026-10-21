@@ -6,7 +6,11 @@ import { ExactTime } from "@/components/RelativeTime";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getJobs } from "@/lib/db";
 import { countLabel } from "@/lib/format";
-import { isExpired, isLikelyScam } from "@/lib/jobs";
+import { isExpired, isIndexable, isLikelyScam } from "@/lib/jobs";
+import { homeCollection, JsonLd } from "@/lib/jsonld";
+
+// How many of the newest indexable jobs the homepage's structured data lists.
+const JSONLD_JOBS = 30;
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -16,10 +20,12 @@ export default async function Home() {
   const result = await getJobs();
 
   let summary: React.ReactNode = null;
+  let jsonLd: React.ReactNode = null;
   if (result.ok) {
     const at = Date.parse(result.fetchedAt);
     const open = result.jobs.filter((j) => !isExpired(j, at) && !isLikelyScam(j));
     const subs = new Set(open.map((j) => j.subreddit)).size;
+    jsonLd = <JsonLd data={homeCollection(result.jobs.filter((j) => isIndexable(j, at)).slice(0, JSONLD_JOBS))} />;
     summary = (
       <>
         {countLabel(open.length, "open job")} from {countLabel(subs, "subreddit")}.
@@ -62,6 +68,7 @@ export default async function Home() {
         )}
       </main>
       <BackToTop />
+      {jsonLd}
     </>
   );
 }
