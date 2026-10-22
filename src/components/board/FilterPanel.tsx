@@ -136,6 +136,7 @@ export function FilterPanel({
         <AppliedGroup value={filters.applied} count={appliedCount} onChange={onChange} />
       )}
       <FacetGroup title="Role" facet="roles" options={options.roles} filters={filters} onChange={onChange} collapsible />
+      <FacetGroup title="Experience" facet="levels" options={options.levels} filters={filters} onChange={onChange} />
       <FacetGroup title="Work mode" facet="modes" options={options.modes} filters={filters} onChange={onChange} />
       <FacetGroup title="Pay" facet="pay" options={options.pay} filters={filters} onChange={onChange} />
       <fieldset>

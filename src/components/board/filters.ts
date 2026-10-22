@@ -19,6 +19,7 @@ export type AppliedFilter = "all" | "hide" | "only";
 export type Filters = {
   q: string;
   roles: string[];
+  levels: string[];
   modes: string[];
   pay: string[];
   hideCommission: boolean;
@@ -33,6 +34,7 @@ export const NONE = "none";
 export const DEFAULT_FILTERS: Filters = {
   q: "",
   roles: [],
+  levels: [],
   modes: [],
   pay: [],
   hideCommission: false,
@@ -52,6 +54,7 @@ export function filtersFromSearch(search: string): Filters {
   return {
     q: (params.get("q") ?? "").slice(0, 200),
     roles: list(params, "role"),
+    levels: list(params, "level"),
     modes: list(params, "mode"),
     pay: list(params, "pay"),
     hideCommission: params.get("commission") === "hide",
@@ -65,6 +68,7 @@ export function filtersToSearch(f: Filters): string {
   const params = new URLSearchParams();
   if (f.q) params.set("q", f.q);
   if (f.roles.length) params.set("role", f.roles.join(","));
+  if (f.levels.length) params.set("level", f.levels.join(","));
   if (f.modes.length) params.set("mode", f.modes.join(","));
   if (f.pay.length) params.set("pay", f.pay.join(","));
   if (f.hideCommission) params.set("commission", "hide");
@@ -80,6 +84,7 @@ export function activeFilterCount(f: Filters): number {
   return (
     (f.q.trim() ? 1 : 0) +
     f.roles.length +
+    f.levels.length +
     f.modes.length +
     f.pay.length +
     (f.hideCommission ? 1 : 0) +
@@ -120,10 +125,11 @@ function haystack(job: Job): string {
   return h;
 }
 
-export type Facet = "roles" | "modes" | "pay";
+export type Facet = "roles" | "levels" | "modes" | "pay";
 
 export function facetValue(job: Job, facet: Facet): string {
   if (facet === "roles") return job.roleCategory ?? NONE;
+  if (facet === "levels") return job.seniority ?? NONE;
   if (facet === "modes") return job.workMode ?? NONE;
   return job.payType ?? NONE;
 }
@@ -135,7 +141,7 @@ export function matches(job: Job, f: Filters, applied: ReadonlySet<string>, skip
     const h = haystack(job);
     if (!terms.every((t) => h.includes(t))) return false;
   }
-  for (const facet of ["roles", "modes", "pay"] as const) {
+  for (const facet of ["roles", "levels", "modes", "pay"] as const) {
     if (facet === skip) continue;
     const selected = f[facet];
     if (selected.length && !selected.includes(facetValue(job, facet))) return false;
@@ -154,13 +160,14 @@ export type FacetOption = { value: string; label: string; count: number };
 
 const FACET_LABELS: Record<Facet, Record<string, string>> = {
   roles: ROLE_LABELS,
+  levels: SENIORITY_LABELS,
   modes: WORK_MODE_LABELS,
   pay: PAY_TYPE_LABELS,
 };
 
 /**
  * Options for one facet with counts that respect every other filter.
- * Roles are ordered by count; work mode and pay keep their natural order.
+ * Roles are ordered by count; experience, work mode and pay keep their natural order.
  */
 export function facetOptions(pool: Job[], f: Filters, applied: ReadonlySet<string>, facet: Facet): FacetOption[] {
   const counts = new Map<string, number>();

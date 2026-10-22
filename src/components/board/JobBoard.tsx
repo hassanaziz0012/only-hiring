@@ -86,6 +86,7 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
       appliedCount: jobs.filter((j) => applied.has(j.id)).length,
       options: {
         roles: facetOptions(pool, filters, applied, "roles"),
+        levels: facetOptions(pool, filters, applied, "levels"),
         modes: facetOptions(pool, filters, applied, "modes"),
         pay: facetOptions(pool, filters, applied, "pay"),
       },
