@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BackToTop } from "@/components/BackToTop";
 import { JobBoard } from "@/components/board/JobBoard";
 import { DataError } from "@/components/DataError";
@@ -8,6 +9,7 @@ import { getJobs } from "@/lib/db";
 import { countLabel } from "@/lib/format";
 import { isExpired, isIndexable, isLikelyScam } from "@/lib/jobs";
 import { homeCollection, JsonLd } from "@/lib/jsonld";
+import { BEST_SUBS_PATH } from "@/lib/subreddits";
 
 // How many of the newest indexable jobs the homepage's structured data lists.
 const JSONLD_JOBS = 30;
@@ -55,7 +57,15 @@ export default async function Home() {
               subreddits are people selling their own services. We read every post, list only the ones that are hiring,
               flag likely scams, and link back to the original.
             </p>
-            {summary && <p className="self-end text-body md:col-span-5 md:text-right lg:col-span-6">{summary}</p>}
+            <div className="self-end text-body md:col-span-5 md:text-right lg:col-span-6">
+              {summary && <p>{summary}</p>}
+              <p className="mt-2">
+                Hiring?{" "}
+                <Link href={`${BEST_SUBS_PATH}#hiring`} className="link font-bold">
+                  Where to post your job
+                </Link>
+              </p>
+            </div>
           </div>
         </section>
       </div>

@@ -372,6 +372,27 @@ export default async function BestSubredditsPage() {
               </ul>
             </Section>
 
+            <Section id="hiring" title="Hiring? Where to post">
+              <p>
+                The same subreddits work from the other side. Pick from the short version above by the kind of work, and
+                avoid the subreddits where most posts aren&apos;t jobs, where a hiring post sits among questions and
+                self-promotion. Hiring posts on every subreddit here also appear on {SITE_NAME}, free and with nothing to
+                sign up for.
+              </p>
+              <ul className="list-disc space-y-2 pl-5">
+                <li>
+                  State the pay. {pct(all.payStated, all.hiring)} of the hiring posts we read did, and posts with a rate in
+                  the title are the easiest to find in a crowded feed.
+                </li>
+                <li>Use the subreddit&apos;s [Hiring] tag or flair, and read its rules first. Some require a budget.</li>
+                <li>Say what the work is, what you need back and by when, and how to apply.</li>
+                <li>
+                  Leave out what reads like a scam: contact only through Telegram or WhatsApp, an unpaid test that&apos;s real
+                  work, or a fee of any kind. We flag those posts, and hide the worst.
+                </li>
+              </ul>
+            </Section>
+
             <Section id="method" title="How we got these numbers">
               <p>
                 {SITE_NAME} collects new posts from the subreddits listed here, and skips the ones tagged [For Hire] or
