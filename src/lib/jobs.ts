@@ -27,11 +27,22 @@ export type JobRow = {
   location: unknown;
   remote_scope: unknown;
   remote_regions: unknown;
+  language_requirements: unknown;
+  test_task: unknown;
+  test_task_details: unknown;
   skills: unknown;
   apply_method: unknown;
   scam_score: unknown;
   red_flags: unknown;
 };
+
+export const LANGUAGE_LEVELS = ["native", "fluent", "good", "basic"] as const;
+export type LanguageLevel = (typeof LANGUAGE_LEVELS)[number];
+/** A language the post requires. Level is null when the post only names the language. */
+export type LanguageRequirement = { language: string; level: LanguageLevel | null };
+
+export const TEST_TASK_PAY = ["paid", "unpaid", "pay_not_stated"] as const;
+export type TestTaskPay = (typeof TEST_TASK_PAY)[number];
 
 /** A parsed job, serializable so it can cross the server/client boundary. */
 export type Job = {
@@ -61,6 +72,12 @@ export type Job = {
   remoteScope: "worldwide" | "restricted" | null;
   /** The countries or regions a restricted remote job is open to, e.g. ["US", "Canada"]. */
   remoteRegions: string[];
+  /** Empty when the post states none, or it was graded before the pipeline asked. */
+  languages: LanguageRequirement[];
+  /** A test task, trial or assessment before hiring, and whether it's paid. Null when the post mentions none. */
+  testTask: TestTaskPay | null;
+  /** What the test is, in the grader's words, e.g. "one sample illustration". */
+  testTaskDetails: string | null;
   skills: string[];
   applyMethod: string | null;
   /** 0–1, higher is more likely a scam. Null means not scored, treated as not flagged. */
@@ -91,6 +108,9 @@ export const JOB_COLUMNS = [
   "location",
   "remote_scope",
   "remote_regions",
+  "language_requirements",
+  "test_task",
+  "test_task_details",
   "skills",
   "apply_method",
   "scam_score",
@@ -112,6 +132,16 @@ function num(value: unknown): number | null {
 function textArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map(text).filter((v): v is string => v !== null);
+}
+
+function languageArray(value: unknown): LanguageRequirement[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const language = text(item?.language);
+    if (!language) return [];
+    const level = text(item.level);
+    return [{ language, level: LANGUAGE_LEVELS.find((l) => l === level) ?? null }];
+  });
 }
 
 function isoDate(value: unknown): string | null {
@@ -148,6 +178,7 @@ export function parseJobRow(row: JobRow): Job | null {
   if (payMin != null && payMax != null && payMin > payMax) [payMin, payMax] = [payMax, payMin];
   const score = num(row.scam_score);
   const scope = text(row.remote_scope);
+  const testTask = TEST_TASK_PAY.find((v) => v === text(row.test_task)) ?? null;
 
   return {
     id,
@@ -172,6 +203,9 @@ export function parseJobRow(row: JobRow): Job | null {
     location: text(row.location),
     remoteScope: scope === "worldwide" || scope === "restricted" ? scope : null,
     remoteRegions: textArray(row.remote_regions),
+    languages: languageArray(row.language_requirements),
+    testTask,
+    testTaskDetails: testTask ? text(row.test_task_details) : null,
     skills: textArray(row.skills),
     applyMethod: text(row.apply_method),
     scamScore: score == null ? null : Math.min(1, Math.max(0, score)),

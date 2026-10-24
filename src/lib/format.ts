@@ -1,8 +1,8 @@
 // Pay, date and time formatting. Pure functions, used on the server and in the browser.
 // A fixed locale keeps the server render and the hydrated client render identical.
 
-import type { Job } from "./jobs";
-import { labelFor, PAY_TYPE_LABELS, WORK_MODE_LABELS } from "./labels";
+import type { Job, LanguageRequirement } from "./jobs";
+import { LANGUAGE_LEVEL_LABELS, labelFor, PAY_TYPE_LABELS, WORK_MODE_LABELS } from "./labels";
 
 const LOCALE = "en-GB";
 
@@ -100,6 +100,19 @@ export function workModeText(job: Job, maxRegions = Infinity): string | null {
 /** The location, unless workModeText() already says where a remote job is open. */
 export function locationText(job: Job): string | null {
   return job.remoteScope === "worldwide" || job.remoteRegions.length ? null : job.location;
+}
+
+/** "Fluent English", or just "English" when the post names no level. */
+export function languageText(req: LanguageRequirement): string {
+  return req.level ? `${LANGUAGE_LEVEL_LABELS[req.level]} ${req.language}` : req.language;
+}
+
+/**
+ * The language requirements worth a chip on a job card: any language other than English, and native English.
+ * Almost every post asks for some English, so the rest of it only appears on the job page.
+ */
+export function notableLanguages(job: Job): LanguageRequirement[] {
+  return job.languages.filter((l) => l.language !== "English" || l.level === "native");
 }
 
 /** The larger end of the pay range, for sorting within one pay type and currency. */

@@ -8,6 +8,7 @@ import {
   PAY_TYPE_LABELS,
   ROLE_LABELS,
   SENIORITY_LABELS,
+  TEST_TASK_LABELS,
   WORK_MODE_LABELS,
 } from "@/lib/labels";
 
@@ -23,7 +24,10 @@ export type Filters = {
   modes: string[];
   regions: string[];
   pay: string[];
+  languages: string[];
+  tests: string[];
   hideCommission: boolean;
+  hideNative: boolean;
   applied: AppliedFilter;
   showScams: boolean;
   sort: Sort;
@@ -39,7 +43,10 @@ export const DEFAULT_FILTERS: Filters = {
   modes: [],
   regions: [],
   pay: [],
+  languages: [],
+  tests: [],
   hideCommission: false,
+  hideNative: false,
   applied: "all",
   showScams: false,
   sort: "newest",
@@ -60,7 +67,10 @@ export function filtersFromSearch(search: string): Filters {
     modes: list(params, "mode"),
     regions: list(params, "region"),
     pay: list(params, "pay"),
+    languages: list(params, "lang"),
+    tests: list(params, "test"),
     hideCommission: params.get("commission") === "hide",
+    hideNative: params.get("native") === "hide",
     applied: params.get("applied") === "hide" ? "hide" : params.get("applied") === "only" ? "only" : "all",
     showScams: params.get("scams") === "show",
     sort: params.get("sort") === "pay" ? "pay" : "newest",
@@ -75,7 +85,10 @@ export function filtersToSearch(f: Filters): string {
   if (f.modes.length) params.set("mode", f.modes.join(","));
   if (f.regions.length) params.set("region", f.regions.join(","));
   if (f.pay.length) params.set("pay", f.pay.join(","));
+  if (f.languages.length) params.set("lang", f.languages.join(","));
+  if (f.tests.length) params.set("test", f.tests.join(","));
   if (f.hideCommission) params.set("commission", "hide");
+  if (f.hideNative) params.set("native", "hide");
   if (f.applied !== "all") params.set("applied", f.applied);
   if (f.showScams) params.set("scams", "show");
   if (f.sort !== "newest") params.set("sort", f.sort);
@@ -92,7 +105,10 @@ export function activeFilterCount(f: Filters): number {
     f.modes.length +
     f.regions.length +
     f.pay.length +
+    f.languages.length +
+    f.tests.length +
     (f.hideCommission ? 1 : 0) +
+    (f.hideNative ? 1 : 0) +
     (f.applied !== "all" ? 1 : 0)
   );
 }
@@ -121,6 +137,8 @@ function haystack(job: Job): string {
       workModeText(job),
       job.payRaw,
       job.payCurrency,
+      job.languages.map((l) => l.language).join(" "),
+      labelFor(TEST_TASK_LABELS, job.testTask),
     ]
       .filter(Boolean)
       .join(" \u0000 ")
@@ -130,12 +148,17 @@ function haystack(job: Job): string {
   return h;
 }
 
-export type Facet = "roles" | "levels" | "modes" | "regions" | "pay";
+export type Facet = "roles" | "levels" | "modes" | "regions" | "pay" | "languages" | "tests";
+
+const FACETS = ["roles", "levels", "modes", "regions", "pay", "languages", "tests"] as const satisfies readonly Facet[];
 
 /** Facet value for "open worldwide" in the regions facet. */
 export const WORLDWIDE = "worldwide";
 
-/** A job's values in one facet. Only regions can hold several, or none (not remote, or no region stated). */
+/**
+ * A job's values in one facet. Regions and languages can hold several; regions can also hold none
+ * (not remote, or no region stated).
+ */
 export function facetValues(job: Job, facet: Facet): string[] {
   if (facet === "roles") return [job.roleCategory ?? NONE];
   if (facet === "levels") return [job.seniority ?? NONE];
@@ -144,6 +167,8 @@ export function facetValues(job: Job, facet: Facet): string[] {
     if (job.workMode !== "remote") return [];
     return job.remoteScope === "worldwide" ? [WORLDWIDE] : job.remoteRegions;
   }
+  if (facet === "languages") return job.languages.length ? job.languages.map((l) => l.language) : [NONE];
+  if (facet === "tests") return [job.testTask ?? NONE];
   return [job.payType ?? NONE];
 }
 
@@ -154,12 +179,13 @@ export function matches(job: Job, f: Filters, applied: ReadonlySet<string>, skip
     const h = haystack(job);
     if (!terms.every((t) => h.includes(t))) return false;
   }
-  for (const facet of ["roles", "levels", "modes", "regions", "pay"] as const) {
+  for (const facet of FACETS) {
     if (facet === skip) continue;
     const selected = f[facet];
     if (selected.length && !facetValues(job, facet).some((v) => selected.includes(v))) return false;
   }
   if (f.hideCommission && job.payType === "commission_only") return false;
+  if (f.hideNative && job.languages.some((l) => l.level === "native")) return false;
   if (f.applied === "hide" && applied.has(job.id)) return false;
   if (f.applied === "only" && !applied.has(job.id)) return false;
   return true;
@@ -177,11 +203,17 @@ const FACET_LABELS: Record<Facet, Record<string, string>> = {
   modes: WORK_MODE_LABELS,
   regions: { [WORLDWIDE]: "Worldwide" },
   pay: PAY_TYPE_LABELS,
+  languages: {},
+  tests: { paid: "Paid", unpaid: "Unpaid", pay_not_stated: "Pay not stated" },
 };
 
+/** Facets whose options are ordered by count rather than kept in their natural order. */
+const BY_COUNT: ReadonlySet<Facet> = new Set(["roles", "regions", "languages"]);
+
+const NONE_LABELS: Partial<Record<Facet, string>> = { tests: "None mentioned" };
 /**
  * Options for one facet with counts that respect every other filter.
- * Roles and regions are ordered by count (worldwide first); experience, work mode and pay keep their natural order.
+ * Roles, regions and languages are ordered by count (worldwide first); the rest keep their natural order.
  */
 export function facetOptions(pool: Job[], f: Filters, applied: ReadonlySet<string>, facet: Facet): FacetOption[] {
   const counts = new Map<string, number>();
@@ -202,14 +234,16 @@ export function facetOptions(pool: Job[], f: Filters, applied: ReadonlySet<strin
     .filter((v) => present.has(v) || f[facet].includes(v))
     .map((value) => ({
       value,
-      label: value === NONE ? "Not stated" : (labelFor(labels, value) ?? value),
+      label: value === NONE ? (NONE_LABELS[facet] ?? "Not stated") : (labelFor(labels, value) ?? value),
       count: counts.get(value) ?? 0,
     }));
 
-  if (facet === "roles" || facet === "regions") {
+  if (BY_COUNT.has(facet)) {
     options.sort(
       (a, b) =>
-        Number(b.value === WORLDWIDE) - Number(a.value === WORLDWIDE) || b.count - a.count || a.label.localeCompare(b.label),
+        Number(b.value === WORLDWIDE) - Number(a.value === WORLDWIDE) ||
+        b.count - a.count ||
+        a.label.localeCompare(b.label),
     );
   }
   return options;

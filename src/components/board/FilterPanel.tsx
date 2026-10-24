@@ -150,11 +150,24 @@ export function FilterPanel({
         noun="regions"
       />
       <FacetGroup title="Pay" facet="pay" options={options.pay} filters={filters} onChange={onChange} />
+      <FacetGroup
+        title="Language"
+        facet="languages"
+        options={options.languages}
+        filters={filters}
+        onChange={onChange}
+        collapsible
+        noun="languages"
+      />
+      <FacetGroup title="Test task" facet="tests" options={options.tests} filters={filters} onChange={onChange} />
       <fieldset>
         <legend className="text-body font-bold">More</legend>
         <div className="mt-2">
           <CheckRow checked={filters.hideCommission} onChange={(v) => onChange({ hideCommission: v })}>
             Hide commission-only jobs
+          </CheckRow>
+          <CheckRow checked={filters.hideNative} onChange={(v) => onChange({ hideNative: v })}>
+            Hide jobs that need a native speaker
           </CheckRow>
           <CheckRow checked={filters.showScams} onChange={(v) => onChange({ showScams: v })}>
             Show likely scams

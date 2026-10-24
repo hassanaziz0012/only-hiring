@@ -56,6 +56,20 @@ export const WORK_MODE_LABELS: Record<string, string> = {
   onsite: "On-site",
 };
 
+/** A required language at a level, e.g. "Fluent English". */
+export const LANGUAGE_LEVEL_LABELS: Record<string, string> = {
+  native: "Native",
+  fluent: "Fluent",
+  good: "Good",
+  basic: "Basic",
+};
+
+export const TEST_TASK_LABELS: Record<string, string> = {
+  paid: "Paid test task",
+  unpaid: "Unpaid test task",
+  pay_not_stated: "Test task, pay not stated",
+};
+
 export const APPLY_METHOD_LABELS: Record<string, string> = {
   reddit_dm: "Message the poster on Reddit",
   reddit_comment: "Comment on the Reddit post",
