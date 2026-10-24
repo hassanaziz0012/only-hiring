@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { memo } from "react";
-import { exactDate, formatPay, relativeTime, shortAge } from "@/lib/format";
+import { exactDate, formatPay, locationText, relativeTime, shortAge, workModeText } from "@/lib/format";
 import { scamWarningLabel, type Job } from "@/lib/jobs";
-import { EMPLOYMENT_LABELS, labelFor, ROLE_LABELS, SENIORITY_LABELS, WORK_MODE_LABELS } from "@/lib/labels";
+import { EMPLOYMENT_LABELS, labelFor, ROLE_LABELS, SENIORITY_LABELS } from "@/lib/labels";
 import { AppliedToggle } from "./AppliedToggle";
 import { RedditLink } from "./RedditLink";
 
 const MAX_SKILLS = 4;
+const MAX_REGIONS = 3;
 
 export function JobAge({ postedAt, now, timeZone }: { postedAt: string | null; now: number; timeZone?: string }) {
   if (!postedAt) {
@@ -46,8 +47,8 @@ export const JobItem = memo(function JobItem({
     labelFor(ROLE_LABELS, job.roleCategory),
     labelFor(SENIORITY_LABELS, job.seniority),
     labelFor(EMPLOYMENT_LABELS, job.employmentType),
-    labelFor(WORK_MODE_LABELS, job.workMode),
-    job.location,
+    workModeText(job, MAX_REGIONS),
+    locationText(job),
   ].filter((v): v is string => Boolean(v));
   const skills = job.skills.slice(0, MAX_SKILLS);
   const moreSkills = job.skills.length - skills.length;

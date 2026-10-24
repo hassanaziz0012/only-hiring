@@ -25,6 +25,8 @@ export type JobRow = {
   pay_raw: unknown;
   work_mode: unknown;
   location: unknown;
+  remote_scope: unknown;
+  remote_regions: unknown;
   skills: unknown;
   apply_method: unknown;
   scam_score: unknown;
@@ -55,6 +57,10 @@ export type Job = {
   payRaw: string | null;
   workMode: string | null;
   location: string | null;
+  /** Who may apply to a remote job. Null when the post doesn't say, or it was graded before the pipeline asked. */
+  remoteScope: "worldwide" | "restricted" | null;
+  /** The countries or regions a restricted remote job is open to, e.g. ["US", "Canada"]. */
+  remoteRegions: string[];
   skills: string[];
   applyMethod: string | null;
   /** 0–1, higher is more likely a scam. Null means not scored, treated as not flagged. */
@@ -83,6 +89,8 @@ export const JOB_COLUMNS = [
   "pay_raw",
   "work_mode",
   "location",
+  "remote_scope",
+  "remote_regions",
   "skills",
   "apply_method",
   "scam_score",
@@ -139,6 +147,7 @@ export function parseJobRow(row: JobRow): Job | null {
   let payMax = num(row.pay_max);
   if (payMin != null && payMax != null && payMin > payMax) [payMin, payMax] = [payMax, payMin];
   const score = num(row.scam_score);
+  const scope = text(row.remote_scope);
 
   return {
     id,
@@ -161,6 +170,8 @@ export function parseJobRow(row: JobRow): Job | null {
     payRaw: text(row.pay_raw),
     workMode: text(row.work_mode),
     location: text(row.location),
+    remoteScope: scope === "worldwide" || scope === "restricted" ? scope : null,
+    remoteRegions: textArray(row.remote_regions),
     skills: textArray(row.skills),
     applyMethod: text(row.apply_method),
     scamScore: score == null ? null : Math.min(1, Math.max(0, score)),

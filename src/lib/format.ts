@@ -2,7 +2,7 @@
 // A fixed locale keeps the server render and the hydrated client render identical.
 
 import type { Job } from "./jobs";
-import { PAY_TYPE_LABELS } from "./labels";
+import { labelFor, PAY_TYPE_LABELS, WORK_MODE_LABELS } from "./labels";
 
 const LOCALE = "en-GB";
 
@@ -75,6 +75,31 @@ export function formatPay(job: Job): PayDisplay {
   }
   if (payRaw) return { text: "Amount not stated", stated: false, hasAmount: false };
   return { text: "Pay not stated", stated: false, hasAmount: false };
+}
+
+/**
+ * The work mode, saying who may apply when it's remote: "Remote (worldwide)", "Remote (US, Canada)", or
+ * "Remote (region not stated)" when the post gives no location at all. Otherwise (no regions, or a job
+ * graded before the pipeline asked) it stays plain "Remote", with the location shown beside it.
+ * Regions past maxRegions are counted as "+N". Null when the work mode isn't stated.
+ */
+export function workModeText(job: Job, maxRegions = Infinity): string | null {
+  const mode = labelFor(WORK_MODE_LABELS, job.workMode);
+  if (job.workMode !== "remote") return mode;
+  if (job.remoteScope === "worldwide") return `${mode} (worldwide)`;
+  if (job.remoteRegions.length) {
+    const shown = job.remoteRegions.slice(0, maxRegions);
+    const more = job.remoteRegions.length - shown.length;
+    return `${mode} (${shown.join(", ")}${more > 0 ? ` +${more}` : ""})`;
+  }
+  // The location, shown beside it, says more than "some countries"
+  if (job.location) return mode;
+  return `${mode} (${job.remoteScope === "restricted" ? "some countries only" : "region not stated"})`;
+}
+
+/** The location, unless workModeText() already says where a remote job is open. */
+export function locationText(job: Job): string | null {
+  return job.remoteScope === "worldwide" || job.remoteRegions.length ? null : job.location;
 }
 
 /** The larger end of the pay range, for sorting within one pay type and currency. */

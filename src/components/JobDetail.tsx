@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPay } from "@/lib/format";
+import { formatPay, workModeText } from "@/lib/format";
 import { hasScamWarning, isExpired, isLikelyScam, scamWarningLabel, type Job } from "@/lib/jobs";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { subredditPath, subredditProfile } from "@/lib/subreddits";
@@ -11,7 +11,6 @@ import {
   PAY_TYPE_LABELS,
   ROLE_LABELS,
   SENIORITY_LABELS,
-  WORK_MODE_LABELS,
 } from "@/lib/labels";
 import { AppliedToggle } from "./AppliedToggle";
 import { RedditLink } from "./RedditLink";
@@ -146,7 +145,7 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
             <Fact term="Role">{labelFor(ROLE_LABELS, job.roleCategory) ?? notStated}</Fact>
             <Fact term="Seniority">{labelFor(SENIORITY_LABELS, job.seniority) ?? notStated}</Fact>
             <Fact term="Type of work">{labelFor(EMPLOYMENT_LABELS, job.employmentType) ?? notStated}</Fact>
-            <Fact term="Work mode">{labelFor(WORK_MODE_LABELS, job.workMode) ?? notStated}</Fact>
+            <Fact term="Work mode">{workModeText(job) ?? notStated}</Fact>
             <Fact term="Location">{job.location ?? notStated}</Fact>
             <Fact term="Pay type">{labelFor(PAY_TYPE_LABELS, job.payType) ?? notStated}</Fact>
             <Fact term="How to apply">{labelFor(APPLY_METHOD_LABELS, job.applyMethod) ?? notStated}</Fact>

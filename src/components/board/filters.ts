@@ -1,6 +1,6 @@
 // Filter state, URL encoding, matching, faceting and grouping for the job board.
 
-import { countLabel, dayKey, dayLabel, formatPay, payRank } from "@/lib/format";
+import { countLabel, dayKey, dayLabel, formatPay, payRank, workModeText } from "@/lib/format";
 import { isLikelyScam, type Job } from "@/lib/jobs";
 import {
   EMPLOYMENT_LABELS,
@@ -113,7 +113,7 @@ function haystack(job: Job): string {
       labelFor(ROLE_LABELS, job.roleCategory),
       labelFor(SENIORITY_LABELS, job.seniority),
       labelFor(EMPLOYMENT_LABELS, job.employmentType),
-      labelFor(WORK_MODE_LABELS, job.workMode),
+      workModeText(job),
       job.payRaw,
       job.payCurrency,
     ]

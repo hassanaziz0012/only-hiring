@@ -6,10 +6,10 @@ import { ProseSection } from "@/components/ProseSection";
 import { ExactTime } from "@/components/RelativeTime";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getJobs, getSubredditStats } from "@/lib/db";
-import { countLabel, formatPay } from "@/lib/format";
+import { countLabel, formatPay, workModeText } from "@/lib/format";
 import { scamWarningLabel, type Job } from "@/lib/jobs";
 import { JsonLd, subredditGraph } from "@/lib/jsonld";
-import { EMPLOYMENT_LABELS, labelFor, ROLE_LABELS, WORK_MODE_LABELS } from "@/lib/labels";
+import { EMPLOYMENT_LABELS, labelFor, ROLE_LABELS } from "@/lib/labels";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { EXPIRY_DAYS, SITE_NAME } from "@/lib/site";
 import {
@@ -72,7 +72,7 @@ function JobRow({ job }: { job: Job }) {
   const facets = [
     labelFor(ROLE_LABELS, job.roleCategory),
     labelFor(EMPLOYMENT_LABELS, job.employmentType),
-    labelFor(WORK_MODE_LABELS, job.workMode),
+    workModeText(job, 3),
   ].filter((v): v is string => Boolean(v));
 
   return (
