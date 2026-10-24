@@ -88,6 +88,7 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
         roles: facetOptions(pool, filters, applied, "roles"),
         levels: facetOptions(pool, filters, applied, "levels"),
         modes: facetOptions(pool, filters, applied, "modes"),
+        regions: facetOptions(pool, filters, applied, "regions"),
         pay: facetOptions(pool, filters, applied, "pay"),
       },
     };

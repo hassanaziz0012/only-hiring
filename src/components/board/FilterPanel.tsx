@@ -12,6 +12,7 @@ function FacetGroup({
   filters,
   onChange,
   collapsible = false,
+  noun = "roles",
 }: {
   title: string;
   facet: Facet;
@@ -19,6 +20,7 @@ function FacetGroup({
   filters: Filters;
   onChange: (patch: Partial<Filters>) => void;
   collapsible?: boolean;
+  noun?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const selected = filters[facet];
@@ -63,7 +65,7 @@ function FacetGroup({
           aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
         >
-          {expanded ? "Show fewer roles" : `Show ${hiddenCount} more roles`}
+          {expanded ? `Show fewer ${noun}` : `Show ${hiddenCount} more ${noun}`}
         </button>
       )}
     </fieldset>
@@ -138,6 +140,15 @@ export function FilterPanel({
       <FacetGroup title="Role" facet="roles" options={options.roles} filters={filters} onChange={onChange} collapsible />
       <FacetGroup title="Experience" facet="levels" options={options.levels} filters={filters} onChange={onChange} />
       <FacetGroup title="Work mode" facet="modes" options={options.modes} filters={filters} onChange={onChange} />
+      <FacetGroup
+        title="Remote region"
+        facet="regions"
+        options={options.regions}
+        filters={filters}
+        onChange={onChange}
+        collapsible
+        noun="regions"
+      />
       <FacetGroup title="Pay" facet="pay" options={options.pay} filters={filters} onChange={onChange} />
       <fieldset>
         <legend className="text-body font-bold">More</legend>
