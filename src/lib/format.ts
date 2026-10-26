@@ -44,7 +44,7 @@ export type PayDisplay = {
   hasAmount: boolean;
 };
 
-export function formatPay(job: Job): PayDisplay {
+export function formatPay(job: Pick<Job, "payType" | "payMin" | "payMax" | "payCurrency" | "payRaw">): PayDisplay {
   const { payType, payMin, payMax, payCurrency, payRaw } = job;
 
   if (payType && NO_AMOUNT_PAY_TYPES.has(payType)) {

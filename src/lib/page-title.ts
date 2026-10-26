@@ -5,6 +5,12 @@
 import { formatPay } from "./format";
 import type { Job } from "./jobs";
 
+/** What a title is built from, so the title query can select just these. */
+type TitleJob = Pick<
+  Job,
+  "id" | "jobTitle" | "subreddit" | "workMode" | "postedAt" | "payType" | "payMin" | "payMax" | "payCurrency" | "payRaw"
+>;
+
 const MAX_LENGTH = 60;
 // Long enough for any real single role, short enough to leave room for pay.
 const MAX_ROLE_LENGTH = 42;
@@ -24,7 +30,7 @@ function role(jobTitle: string): string {
 }
 
 /** The longest title that fits: role, pay, Remote, subreddit, dropping from the end. */
-function baseTitle(job: Job): string {
+function baseTitle(job: TitleJob): string {
   const pay = formatPay(job);
   const parts = [role(job.jobTitle), pay.hasAmount ? pay.text : null, job.workMode === "remote" ? "Remote" : null].filter(
     (p): p is string => p !== null,
@@ -39,7 +45,7 @@ function baseTitle(job: Job): string {
 }
 
 /** Titles for every listed job. A title that two jobs share gets each post's date added. */
-export function jobPageTitles(jobs: Job[]): Map<string, string> {
+export function jobPageTitles(jobs: TitleJob[]): Map<string, string> {
   const base = new Map(jobs.map((job) => [job.id, baseTitle(job)]));
   const uses = new Map<string, number>();
   for (const title of base.values()) uses.set(title, (uses.get(title) ?? 0) + 1);

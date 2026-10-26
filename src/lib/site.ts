@@ -28,6 +28,8 @@ export const INDEXNOW_KEY = "5881dbaabf4d1e3247e4c27afa002ff8";
 
 /** Jobs posted longer ago than this move to the collapsed "older posts" section. */
 export const EXPIRY_DAYS = 14;
+/** The job list reads only jobs posted this recently; older jobs stay reachable by their own URL. */
+export const LIST_WINDOW_DAYS = 60;
 
 /** Jobs at or above this scam score are hidden unless the visitor chooses to see them. */
 export const SCAM_HIDE_THRESHOLD = 0.6;

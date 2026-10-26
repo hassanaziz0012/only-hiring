@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DataError } from "@/components/DataError";
 import { JobDetail } from "@/components/JobDetail";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getJob, getJobs } from "@/lib/db";
+import { getJob, getJobs, getJobTitles } from "@/lib/db";
 import { isIndexable } from "@/lib/jobs";
 import { jobGraph, JsonLd } from "@/lib/jsonld";
 import { jobPageTitles } from "@/lib/page-title";
@@ -15,6 +15,7 @@ export const ensureStatic = "navigation";
 // Unlisted IDs never match a job, so the placeholder renders the not-found page.
 const PLACEHOLDER_ID = "_";
 
+// Only the jobs in the list window are built; older ones render on first request, and then stay cached.
 export async function generateStaticParams() {
   const result = await getJobs();
   if (!result.ok || result.jobs.length === 0) return [{ id: PLACEHOLDER_ID }];
@@ -23,13 +24,13 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/jobs/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const result = await getJobs();
-  const job = result.ok ? result.jobs.find((j) => j.id === id) : undefined;
+  const [result, titles] = await Promise.all([getJob(id), getJobTitles()]);
+  const job = result.ok ? result.job : null;
   if (!result.ok || !job) return { title: "Job not found", robots: { index: false } };
   const description = job.summary.length > 200 ? `${job.summary.slice(0, 197).trimEnd()}…` : job.summary;
   return {
     // Absolute: the site name would use a quarter of the space, and Google shows it from the WebSite JSON-LD.
-    title: { absolute: jobPageTitles(result.jobs).get(job.id) ?? job.jobTitle },
+    title: { absolute: titles[job.id] ?? jobPageTitles([job]).get(job.id) ?? job.jobTitle },
     description,
     alternates: { canonical: `/jobs/${job.id}` },
     // Same rule as the sitemap: likely scams, expired, adult and thin posts stay out of search results.
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: PageProps<"/jobs/[id]">): Pro
 }
 
 // Resolve the job before anything streams, so an unknown ID gets a real 404 status rather than a 200
-// with a not-found body. getJob reads the cached job list, so this is cheap.
+// with a not-found body. getJob is cached, so the metadata and the page share one read.
 export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const { id } = await params;
   const result = await getJob(id);

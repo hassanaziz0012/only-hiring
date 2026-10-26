@@ -9,9 +9,9 @@ export type JobRow = {
   subreddit: unknown;
   reddit_url: unknown;
   reddit_title: unknown;
-  author: unknown;
+  author?: unknown;
   flair: unknown;
-  body_excerpt: unknown;
+  body_excerpt?: unknown;
   posted_at: unknown;
   job_title: unknown;
   summary: unknown;
@@ -29,11 +29,13 @@ export type JobRow = {
   remote_regions: unknown;
   language_requirements: unknown;
   test_task: unknown;
-  test_task_details: unknown;
+  test_task_details?: unknown;
   skills: unknown;
-  apply_method: unknown;
+  apply_method?: unknown;
   scam_score: unknown;
-  red_flags: unknown;
+  red_flags?: unknown;
+  /** Word count of body_excerpt, selected instead of the text itself by the list query. */
+  body_words?: unknown;
 };
 
 export const LANGUAGE_LEVELS = ["native", "fluent", "good", "basic"] as const;
@@ -54,6 +56,8 @@ export type Job = {
   flair: string | null;
   /** The opening of the post body as plain text, cut to a few hundred characters by the pipeline. */
   bodyExcerpt: string | null;
+  /** Words in the excerpt. Set even when the list query leaves the excerpt itself out. */
+  bodyWords: number;
   /** ISO timestamp, or null when the post time is unknown. */
   postedAt: string | null;
   jobTitle: string;
@@ -129,6 +133,8 @@ function num(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+const wordCount = (s: string | null) => (s ? s.split(/\s+/).filter(Boolean).length : 0);
+
 function textArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map(text).filter((v): v is string => v !== null);
@@ -178,6 +184,7 @@ export function parseJobRow(row: JobRow): Job | null {
   if (payMin != null && payMax != null && payMin > payMax) [payMin, payMax] = [payMax, payMin];
   const score = num(row.scam_score);
   const scope = text(row.remote_scope);
+  const bodyExcerpt = text(row.body_excerpt);
   const testTask = TEST_TASK_PAY.find((v) => v === text(row.test_task)) ?? null;
 
   return {
@@ -187,7 +194,8 @@ export function parseJobRow(row: JobRow): Job | null {
     redditTitle,
     author: text(row.author),
     flair: text(row.flair),
-    bodyExcerpt: text(row.body_excerpt),
+    bodyExcerpt,
+    bodyWords: num(row.body_words) ?? wordCount(bodyExcerpt),
     postedAt: isoDate(row.posted_at),
     jobTitle: text(row.job_title) ?? redditTitle,
     summary: text(row.summary) ?? "",
@@ -235,14 +243,12 @@ export function isNsfw(job: Job): boolean {
 
 const THIN_WORDS = 50;
 
-const wordCount = (s: string | null) => (s ? s.split(/\s+/).filter(Boolean).length : 0);
-
 /**
  * Too little on the page to be worth a search result: crossposts and link posts with no body, where
  * the details are only on Reddit, or a summary and excerpt that together run under THIN_WORDS words.
  */
 export function isThin(job: Job): boolean {
-  return !job.bodyExcerpt || wordCount(job.summary) + wordCount(job.bodyExcerpt) < THIN_WORDS;
+  return job.bodyWords === 0 || wordCount(job.summary) + job.bodyWords < THIN_WORDS;
 }
 
 /** Search engines get only the jobs the board lists by default, minus adult content and thin pages. */
