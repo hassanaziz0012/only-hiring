@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SITE_NAME, SOURCE_URL } from "@/lib/site";
+import { STATS_PATH } from "@/lib/stats";
 import { AccountNav } from "./account/AccountNav";
 import { FeedbackNav } from "./FeedbackNav";
 import { LogoMark } from "./LogoMark";
@@ -20,6 +21,11 @@ export function SiteHeader() {
               {/* The full label doesn't fit beside the other links on phones narrower than 360px. */}
               <span className="min-[22.5rem]:hidden">About</span>
               <span className="hidden min-[22.5rem]:inline">How it works</span>
+            </Link>
+          </li>
+          <li className="hidden sm:block">
+            <Link href={STATS_PATH} className="link tap">
+              Stats
             </Link>
           </li>
           {SOURCE_URL && (

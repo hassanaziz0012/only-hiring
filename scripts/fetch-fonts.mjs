@@ -18,7 +18,9 @@ const wanted = [
   { weight: "400", format: "woff2" },
   { weight: "500", format: "woff2" },
   { weight: "700", format: "woff2" },
-  { weight: "700", format: "ttf" }, // for the Open Graph image renderer, which can't read woff2
+  // For the image renderer (Open Graph images, the stats image), which can't read woff2.
+  { weight: "400", format: "ttf" },
+  { weight: "700", format: "ttf" },
 ];
 const fileFor = ({ weight, format }) => join(dir, `PilcrowRounded-${weight}.${format}`);
 

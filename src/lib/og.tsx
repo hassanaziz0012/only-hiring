@@ -7,10 +7,19 @@ export const OG_SIZE = { width: 1200, height: 630 };
 
 export const OG_COLORS = { mint: "#c3edce", ink: "#0a0a0a", pink: "#f8c7c9", accent: "#1f6b3a" };
 
-// Only the bold weight ships as TTF, which the image renderer needs (it can't read WOFF2).
-const bold = await readFile(join(process.cwd(), "src/app/fonts/PilcrowRounded-700.ttf"));
+// The image renderer needs TTF (it can't read WOFF2). Only these two weights are fetched as TTF.
+const [bold, regular] = await Promise.all(
+  [700, 400].map((weight) => readFile(join(process.cwd(), `src/app/fonts/PilcrowRounded-${weight}.ttf`))),
+);
 
+/** Bold only, so text in the Open Graph images is bold whatever its weight. */
 export const OG_FONTS = [{ name: "Pilcrow", data: bold, style: "normal" as const, weight: 700 as const }];
+
+/** Both weights, for images with body text (the stats image). */
+export const OG_FONTS_WITH_REGULAR = [
+  ...OG_FONTS,
+  { name: "Pilcrow", data: regular, style: "normal" as const, weight: 400 as const },
+];
 
 /** One side of the square bracket from "[Hiring]" post titles. */
 export function Bracket({ side, height, stroke }: { side: "left" | "right"; height: number; stroke: number }) {

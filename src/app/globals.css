@@ -20,6 +20,12 @@
   --pink-ink: #0a0a0a;
   --pink-deep: #9e1f2a;
   --focus: #1f6b3a;
+  /* The stats page's scam-score scale, good to bad around a grey middle. Checked for colour-blind
+     separation between neighbours; the middle grey is low-contrast, so every band is also labelled. */
+  --scale-clean: #1f6b3a;
+  --scale-doubts: #cfcfcf;
+  --scale-warned: #e0606b;
+  --scale-likely: #8a1823;
 
   color-scheme: light;
 }
@@ -40,6 +46,10 @@
     --pink-ink: #ffe3e4;
     --pink-deep: #ffa3a9;
     --focus: #8fe0a7;
+    --scale-clean: #8fe0a7;
+    --scale-doubts: #46524b;
+    --scale-warned: #e0707a;
+    --scale-likely: #ffb3b8;
 
     color-scheme: dark;
   }
@@ -59,6 +69,10 @@
   --color-pink: var(--pink);
   --color-pink-ink: var(--pink-ink);
   --color-pink-deep: var(--pink-deep);
+  --color-scale-clean: var(--scale-clean);
+  --color-scale-doubts: var(--scale-doubts);
+  --color-scale-warned: var(--scale-warned);
+  --color-scale-likely: var(--scale-likely);
 
   --font-sans: var(--font-pilcrow), ui-rounded, "Nunito", system-ui, sans-serif;
 
