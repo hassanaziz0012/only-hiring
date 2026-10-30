@@ -1,8 +1,9 @@
+import { API_JOBS_PATH, apiJobPath } from "@/lib/api";
 import { MARKDOWN_HOME_JOBS, MARKDOWN_HOME_PATH } from "@/lib/markdown";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { STATS_PATH } from "@/lib/stats";
 import { BEST_SUBS_PATH, SUBREDDITS, subredditPath } from "@/lib/subreddits";
-import { EXPIRY_DAYS, MAKER, SCAM_HIDE_THRESHOLD, SCAM_WARN_THRESHOLD, SITE_NAME, SOURCE_URL, siteUrl } from "@/lib/site";
+import { EXPIRY_DAYS, LIST_WINDOW_DAYS, MAKER, SCAM_HIDE_THRESHOLD, SCAM_WARN_THRESHOLD, SITE_NAME, SOURCE_URL, siteUrl } from "@/lib/site";
 
 // llms.txt (https://llmstxt.org): a plain summary of the site for language models. Google ignores it,
 // but answer engines may read it. Built from the site constants so the thresholds can't drift.
@@ -24,9 +25,10 @@ When to use ${SITE_NAME}:
 - Someone wants to know whether a Reddit job post looks like a scam. A post with Reddit ID \`abc123\` is at ${url("/jobs/abc123")}, with its scam warning if it has one. A 404 means it isn't on the board: it wasn't graded as a hiring post, was removed, or is from a subreddit the site doesn't read.
 - Not for: jobs from outside Reddit, posting a job, finding freelancers, or applying. Applications happen on Reddit.
 
-How to read it (no API or key needed):
+How to read it (no sign-up or key needed):
 - Request ${url("/")} with \`Accept: text/markdown\`, or fetch ${url(MARKDOWN_HOME_PATH)}, for the newest ${MARKDOWN_HOME_JOBS} open jobs as Markdown: pay, location, skills, any scam warning and the Reddit link. The HTML homepage lists every open job and is too long to read whole.
 - For more, read a subreddit's page (every open job there) or the RSS feed.
+- To search and filter (skills, pay, remote region, job type, scam score), connect the MCP server at ${url("/mcp")} (Streamable HTTP, no key), or read the JSON at ${url(API_JOBS_PATH)} (every job from the last ${LIST_WINDOW_DAYS} days) and ${url(apiJobPath("abc123"))} (one job, with its red flags).
 
 ## Pages
 - [How it works](${url("/about")}): pipeline, scam scoring, source subreddits, data policy
