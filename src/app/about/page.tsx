@@ -14,7 +14,10 @@ import {
   SCAM_WARN_THRESHOLD,
   SITE_NAME,
   SOURCE_URL,
+  siteUrl,
 } from "@/lib/site";
+
+const MCP_URL = new URL("/mcp", siteUrl()).toString();
 
 const description = `How ${SITE_NAME} finds genuine hiring posts on Reddit, scores scams, and what it doesn't store.`;
 
@@ -227,6 +230,49 @@ export default function AboutPage() {
                   ) : null}
                   . The job-collection pipeline isn&apos;t part of it.
                 </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="ai-assistants" className="mt-28 scroll-mt-24 md:mt-40" aria-labelledby="assistants-title">
+          <div className="grid gap-x-16 gap-y-10 lg:grid-cols-12">
+            <h2 id="assistants-title" className="head lowercase lg:col-span-4">
+              use it in claude or chatgpt
+            </h2>
+            <div className="lg:col-span-8">
+              <p className="max-w-[60ch] text-lead">
+                Connect your AI assistant to {SITE_NAME}&apos;s MCP server and ask for jobs in plain words: &ldquo;remote
+                Python contracts paying $40/hr or more&rdquo;, or &ldquo;is this Reddit post a scam?&rdquo; with a link.
+                It searches the same jobs, with the same scam warnings, and links back here and to the Reddit post.
+              </p>
+              <p className="mt-6 break-words font-mono font-bold">{MCP_URL}</p>
+              <div className="mt-10 grid gap-x-12 gap-y-10 sm:grid-cols-2">
+                <div>
+                  <h3 className="text-lead font-bold">Claude</h3>
+                  <p className="mt-2">
+                    In Settings, open Connectors, choose Add custom connector and paste the address. Leave the OAuth fields
+                    empty: there&apos;s nothing to sign in to. Works on every plan, including Free.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-lead font-bold">ChatGPT</h3>
+                  <p className="mt-2">
+                    Custom connectors need a paid plan. Turn on developer mode in the connector settings, create a connector
+                    with the address and no authentication, then switch it on in a chat from the + menu.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-lead font-bold">Claude Code</h3>
+                  <p className="mt-2 break-words font-mono text-small">claude mcp add --transport http only-hiring {MCP_URL}</p>
+                </div>
+                <div>
+                  <h3 className="text-lead font-bold">Anything else</h3>
+                  <p className="mt-2">
+                    Cursor, VS Code and other clients that speak Streamable HTTP take the address as is. No key or account
+                    needed. Applying still happens on Reddit.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

@@ -58,6 +58,11 @@ export function SiteFooter() {
                 </Link>
               </li>
               <li>
+                <Link href="/about#ai-assistants" className="link tap">
+                  Use in Claude or ChatGPT
+                </Link>
+              </li>
+              <li>
                 <Link href="/privacy" className="link tap">
                   Privacy
                 </Link>
