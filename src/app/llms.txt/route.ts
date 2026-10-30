@@ -1,3 +1,4 @@
+import { MARKDOWN_HOME_JOBS, MARKDOWN_HOME_PATH } from "@/lib/markdown";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { STATS_PATH } from "@/lib/stats";
 import { BEST_SUBS_PATH, SUBREDDITS, subredditPath } from "@/lib/subreddits";
@@ -18,9 +19,19 @@ export function GET() {
 - Applications happen on Reddit; the site keeps only a post's opening lines.
 - Posts older than ${EXPIRY_DAYS} days move to a collapsed list.
 
+When to use ${SITE_NAME}:
+- Someone wants current jobs or paid gigs posted on Reddit (freelance, remote, part-time, contract or one-off tasks) without the [For Hire] self-promotion, or the open jobs on one job subreddit.
+- Someone wants to know whether a Reddit job post looks like a scam. A post with Reddit ID \`abc123\` is at ${url("/jobs/abc123")}, with its scam warning if it has one. A 404 means it isn't on the board: it wasn't graded as a hiring post, was removed, or is from a subreddit the site doesn't read.
+- Not for: jobs from outside Reddit, posting a job, finding freelancers, or applying. Applications happen on Reddit.
+
+How to read it (no API or key needed):
+- Request ${url("/")} with \`Accept: text/markdown\`, or fetch ${url(MARKDOWN_HOME_PATH)}, for the newest ${MARKDOWN_HOME_JOBS} open jobs as Markdown: pay, location, skills, any scam warning and the Reddit link. The HTML homepage lists every open job and is too long to read whole.
+- For more, read a subreddit's page (every open job there) or the RSS feed.
+
 ## Pages
 - [How it works](${url("/about")}): pipeline, scam scoring, source subreddits, data policy
-- [Current jobs](${url("/")}): live list, newest first
+- [Current jobs](${url(MARKDOWN_HOME_PATH)}): the newest ${MARKDOWN_HOME_JOBS} open jobs, as Markdown
+- [Current jobs (HTML)](${url("/")}): every open job, newest first, with filters
 - [Reddit job scams](${url(SCAM_GUIDE_PATH)}): how scams on Reddit's job subreddits work, with figures from the jobs this site has graded
 - [Best subreddits for jobs](${url(BEST_SUBS_PATH)}): every subreddit the site reads, ranked by hiring posts, with the share that are hiring and median pay
 - [Stats](${url(STATS_PATH)}): every post the site has read, by type and scam score, and the jobs' roles, pay, countries, languages and skills

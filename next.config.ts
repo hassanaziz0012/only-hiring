@@ -11,8 +11,20 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [{ source: "/r", destination: BEST_SUBS_PATH, permanent: false }];
   },
+  async rewrites() {
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      // Agents asking for Markdown get a Markdown 404 (src/app/not-found.md) when nothing else matched.
+      fallback: [
+        { source: "/:path*", has: [{ type: "header", key: "accept", value: ".*text/markdown.*" }], destination: "/not-found.md" },
+      ],
+    };
+  },
   async headers() {
     return [
+      // The Markdown copy duplicates the homepage, so keep it out of search results.
+      { source: "/index.md", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
       {
         source: "/:path*",
         headers: [

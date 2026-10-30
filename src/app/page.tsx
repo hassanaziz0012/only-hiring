@@ -9,6 +9,7 @@ import { getJobs } from "@/lib/db";
 import { countLabel } from "@/lib/format";
 import { isExpired, isIndexable, isLikelyScam } from "@/lib/jobs";
 import { homeCollection, JsonLd } from "@/lib/jsonld";
+import { MARKDOWN_HOME_PATH } from "@/lib/markdown";
 import { BEST_SUBS_PATH } from "@/lib/subreddits";
 
 // How many of the newest indexable jobs the homepage's structured data lists.
@@ -16,7 +17,13 @@ const JSONLD_JOBS = 30;
 
 export const metadata: Metadata = {
   // Declared here, not in the layout: a page's alternates replace the layout's.
-  alternates: { canonical: "/", types: { "application/rss+xml": [{ url: "/feed.xml", title: "Newest jobs" }] } },
+  alternates: {
+    canonical: "/",
+    types: {
+      "application/rss+xml": [{ url: "/feed.xml", title: "Newest jobs" }],
+      "text/markdown": [{ url: MARKDOWN_HOME_PATH, title: "Newest jobs (Markdown)" }],
+    },
+  },
 };
 
 export default async function Home() {
