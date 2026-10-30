@@ -119,6 +119,7 @@ function noiseBreakdown(s: SubredditStats): string {
     [s.spam, "spam or promotional post", "spam or promotional posts"],
     [s.unpaid, "unpaid collaboration", "unpaid collaborations"],
     [s.other, "post of another kind", "posts of other kinds"],
+    [s.prefiltered, "post set aside as clearly not hiring", "posts set aside as clearly not hiring"],
   ] as const;
   const named = parts.filter(([n]) => n > 0).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`);
   if (named.length === 0) return "";

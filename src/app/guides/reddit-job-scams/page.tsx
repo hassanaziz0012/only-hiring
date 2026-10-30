@@ -339,12 +339,13 @@ export default async function ScamGuidePage() {
                 {COLLECTED_SINCE}, and update as new posts come in. Posts tagged
                 [For Hire] or [Offer] were skipped before grading. A language model read each post, decided whether it
                 was hiring, scored it from 0 to 1 for scam risk using a fixed guide, and listed the warning signs it saw.
-                Reposts and crossposts count once.
+                Posts that were clearly not hiring, judged from the subreddit&apos;s flair or by a simple classifier trained
+                on the model&apos;s earlier decisions, were set aside without grading. Reposts and crossposts count once.
               </p>
               <p>
                 Of the {s.graded} posts, {s.hiring} were hiring, {s.discussion} were discussion or questions,{" "}
                 {s.forHire} were people offering their services, {s.spam} were spam or promotion, {s.unpaid} offered no
-                pay at all, and {s.other} were something else. A score of {SCAM_WARN_THRESHOLD} or more earns a warning,
+                pay at all, {s.other} were something else, and {s.prefiltered} were set aside as clearly not hiring. A score of {SCAM_WARN_THRESHOLD} or more earns a warning,
                 and {SCAM_HIDE_THRESHOLD} or more marks a likely scam. The warning signs are grouped by the words the
                 model used.
               </p>

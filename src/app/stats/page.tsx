@@ -271,7 +271,9 @@ export default async function StatsPage() {
             <p>
               {SITE_NAME} collects new posts from Reddit&apos;s job subreddits and skips the ones already tagged [For Hire]
               or [Offer]. A language model reads each remaining post, decides what it is, scores how likely it is to be a
-              scam, and pulls out the role, pay, location and requirements.
+              scam, and pulls out the role, pay, location and requirements. Posts that are clearly not hiring, judged
+              from their flair or by a simple classifier trained on the model&apos;s earlier decisions, are set aside
+              without being graded.
             </p>
             <p>
               The first section counts every post it has read, with reposts and crossposts counted once. The second counts

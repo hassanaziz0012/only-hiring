@@ -397,7 +397,8 @@ export default async function BestSubredditsPage() {
               <p>
                 {SITE_NAME} collects new posts from the subreddits listed here, and skips the ones tagged [For Hire] or
                 [Offer]. A language model reads each remaining post, decides whether it&apos;s hiring, and pulls out the
-                role, pay and location. The figures above come from all {all.graded} posts collected since {COLLECTED_SINCE},
+                role, pay and location. Posts that are clearly not hiring, judged from their flair or by a simple classifier
+                trained on the model&apos;s earlier decisions, are set aside unread and count as not hiring. The figures above come from all {all.graded} posts collected since {COLLECTED_SINCE},
                 with reposts and crossposts counted once, and they update as new posts come in.
               </p>
               <p>

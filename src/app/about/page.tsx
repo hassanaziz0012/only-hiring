@@ -42,7 +42,7 @@ const STEPS = [
   },
   {
     title: "Grade",
-    body: "A language model reads each remaining post. It decides whether someone is actually hiring, writes a short summary, pulls out the pay, skills and location, and scores how likely the post is to be a scam.",
+    body: "Posts that are clearly not hiring, such as interview questions, are set aside first by a simple classifier trained on earlier grades. A language model reads each remaining post. It decides whether someone is actually hiring, writes a short summary, pulls out the pay, skills and location, and scores how likely the post is to be a scam.",
   },
   {
     title: "Publish",

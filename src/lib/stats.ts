@@ -158,6 +158,7 @@ export function buildSiteStats(raw: RawStats): SiteStats {
       { label: "Spam and promotion", n: t("spam"), muted: true },
       { label: "Unpaid collaboration", n: t("unpaid"), muted: true },
       { label: "Something else", n: t("other"), muted: true },
+      { label: "Clearly not hiring, not graded", n: t("prefiltered"), muted: true },
     ].filter((b) => b.n > 0),
     scam: {
       clean: t("clean"),

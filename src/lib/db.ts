@@ -199,7 +199,7 @@ const MEDIANS_SQL = `
   GROUP BY 1`;
 
 const STATS_TOTALS_SQL = `
-  SELECT ${["graded", "hiring", "discussion", "for_hire", "spam", "unpaid", "other", "clean", "warned", "likely",
+  SELECT ${["graded", "hiring", "discussion", "for_hire", "spam", "unpaid", "other", "prefiltered", "clean", "warned", "likely",
     "flag_vague", "flag_low_pay", "flag_free_work", "flag_high_pay", "flag_money"].map((c) => `coalesce(sum(${c}), 0)::int AS ${c}`).join(", ")},
     coalesce(sum(removed_warned + removed_unwarned), 0)::int AS removed,
     max(changed_at) AS changed_at

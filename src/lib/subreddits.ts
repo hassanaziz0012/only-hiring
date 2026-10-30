@@ -27,7 +27,8 @@ export type FlagKind = (typeof FLAG_KINDS)[number];
 
 /**
  * Every post graded from one subreddit, after posts tagged [For Hire] or [Offer] were skipped, by
- * what the grader decided they were. Reposts count once. `clean`, `warned` and `likely` count hiring
+ * what the grader decided they were. Reposts count once. `graded` also counts the posts set aside
+ * before grading as clearly not hiring (`prefiltered`), so the kinds add up to it. `clean`, `warned` and `likely` count hiring
  * posts at a score of 0.2 or less, the warning threshold and the hiding threshold. `flags` counts hiring
  * posts with at least one red flag of each kind. Pay medians are over the midpoints of hiring posts
  * stating a US-dollar amount of that pay type.
@@ -41,6 +42,8 @@ export type SubredditStats = {
   spam: number;
   unpaid: number;
   other: number;
+  /** Set aside as clearly not hiring, by flair or by a classifier trained on the grades, without a type. */
+  prefiltered: number;
   clean: number;
   warned: number;
   likely: number;
@@ -76,6 +79,7 @@ export function parseStatsRow(r: StatsRow): SubredditStats | null {
     spam: int(r.spam),
     unpaid: int(r.unpaid),
     other: int(r.other),
+    prefiltered: int(r.prefiltered),
     clean: int(r.clean),
     warned: int(r.warned),
     likely: int(r.likely),
@@ -106,7 +110,7 @@ type Counts = Omit<SubredditStats, "subreddit" | "hourlyUsd" | "fixedUsd">;
 /** Every count summed over the given subreddits. Medians don't sum, so they're left out. */
 export function sumStats(all: SubredditStats[]): Counts {
   const zero: Counts = {
-    graded: 0, hiring: 0, discussion: 0, forHire: 0, spam: 0, unpaid: 0, other: 0, clean: 0, warned: 0,
+    graded: 0, hiring: 0, discussion: 0, forHire: 0, spam: 0, unpaid: 0, other: 0, prefiltered: 0, clean: 0, warned: 0,
     likely: 0, anyFlag: 0, flags: { vague: 0, lowPay: 0, freeWork: 0, highPay: 0, money: 0 },
     removedWarned: 0, removedUnwarned: 0, payStated: 0,
   };
