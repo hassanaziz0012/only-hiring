@@ -53,15 +53,61 @@ const STEPS = [
   },
 ];
 
-async function SubredditList() {
+/** Listed jobs per subreddit, busiest first. Empty when the jobs can't be read. */
+async function subredditCounts(): Promise<[string, number][]> {
   const result = await getJobs();
-  if (!result.ok || result.jobs.length === 0) return null;
+  if (!result.ok) return [];
   const counts = new Map<string, number>();
   for (const job of result.jobs) counts.set(job.subreddit, (counts.get(job.subreddit) ?? 0) + 1);
-  const subs = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+/** The sections below the scam card, in page order. Each id is the section's anchor. */
+const CONTENTS = [
+  { id: "subreddits", title: "where the posts come from", blurb: "The subreddits we read, and how many jobs each has." },
+  { id: "good-to-know", title: "good to know", blurb: "Older and deleted posts, pay, your data, removals." },
+  { id: "ai-assistants", title: "use it in claude or chatgpt", blurb: "Search these jobs from your AI assistant." },
+  { id: "who-makes-this", title: "who makes this", blurb: "Who built the site, why, and how to get in touch." },
+] as const;
+
+function Contents({ hasSubreddits }: { hasSubreddits: boolean }) {
+  const items = CONTENTS.filter((item) => hasSubreddits || item.id !== "subreddits");
+  return (
+    <nav className="mt-16 md:mt-20" aria-labelledby="contents-title">
+      <div className="grid gap-x-16 gap-y-6 lg:grid-cols-12">
+        <h2 id="contents-title" className="text-lead font-bold lg:col-span-4">
+          <span className="bracketed">Also on this page</span>
+        </h2>
+        <ol className="grid gap-3 sm:grid-cols-2 lg:col-span-8">
+          {items.map((item) => (
+            <li key={item.id}>
+              <a
+                href={`#${item.id}`}
+                className="group flex h-full items-baseline gap-4 bg-surface px-4 py-3 transition-colors hover:bg-surface-2"
+              >
+                <span className="min-w-0">
+                  <span className="block font-bold lowercase underline decoration-[0.08em] underline-offset-[0.18em] transition-[text-decoration-color] group-hover:decoration-accent">
+                    {item.title}
+                  </span>
+                  <span className="mt-1 block text-small text-muted">{item.blurb}</span>
+                </span>
+                <span aria-hidden="true" className="ml-auto shrink-0 text-muted transition-transform group-hover:translate-y-0.5">
+                  ↓
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </nav>
+  );
+}
+
+function SubredditList({ subs }: { subs: [string, number][] }) {
+  if (subs.length === 0) return null;
 
   return (
-    <section className="mt-28 md:mt-40" aria-labelledby="subs-title">
+    <section id="subreddits" className="mt-28 scroll-mt-10 md:mt-40" aria-labelledby="subs-title">
       <div className="grid gap-x-16 gap-y-8 lg:grid-cols-12">
         <div className="lg:col-span-4">
           <h2 id="subs-title" className="head lowercase">
@@ -103,7 +149,9 @@ async function SubredditList() {
   );
 }
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const subs = await subredditCounts();
+
   return (
     <>
       <SiteHeader />
@@ -166,9 +214,11 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <SubredditList />
+        <Contents hasSubreddits={subs.length > 0} />
 
-        <section className="mt-28 md:mt-40" aria-labelledby="limits-title">
+        <SubredditList subs={subs} />
+
+        <section id="good-to-know" className="mt-28 scroll-mt-10 md:mt-40" aria-labelledby="limits-title">
           <div className="grid gap-x-16 gap-y-10 lg:grid-cols-12">
             <h2 id="limits-title" className="head lowercase lg:col-span-4">
               good to know
@@ -235,7 +285,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section id="ai-assistants" className="mt-28 scroll-mt-24 md:mt-40" aria-labelledby="assistants-title">
+        <section id="ai-assistants" className="mt-28 scroll-mt-10 md:mt-40" aria-labelledby="assistants-title">
           <div className="grid gap-x-16 gap-y-10 lg:grid-cols-12">
             <h2 id="assistants-title" className="head lowercase lg:col-span-4">
               use it in claude or chatgpt
@@ -278,7 +328,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="mt-28 md:mt-40" aria-labelledby="maker-title">
+        <section id="who-makes-this" className="mt-28 scroll-mt-10 md:mt-40" aria-labelledby="maker-title">
           <div className="grid gap-x-16 gap-y-8 lg:grid-cols-12">
             <h2 id="maker-title" className="head lowercase lg:col-span-4">
               who makes this
