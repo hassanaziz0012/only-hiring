@@ -4,37 +4,38 @@ import { STATS_PATH } from "@/lib/stats";
 import { AccountNav } from "./account/AccountNav";
 import { FeedbackNav } from "./FeedbackNav";
 import { LogoMark } from "./LogoMark";
+import { type MenuLink, MobileMenu } from "./MobileMenu";
 import { Wordmark } from "./Wordmark";
+
+const LINKS: MenuLink[] = [
+  { href: "/about", label: "How it works" },
+  { href: STATS_PATH, label: "Stats" },
+  ...(SOURCE_URL ? [{ href: SOURCE_URL, label: "Source", external: true }] : []),
+];
 
 export function SiteHeader() {
   return (
     <header className="shell flex items-center justify-between gap-4 py-4 md:py-6">
       <Link href="/" aria-label={`${SITE_NAME}, all jobs`} className="flex items-center gap-2 text-lead">
-        {/* Below 400px the nav links leave no room for the mark beside the wordmark. */}
-        <LogoMark className="hidden size-[1.3em] shrink-0 min-[25rem]:block" />
+        <LogoMark className="size-[1.3em] shrink-0" />
         <Wordmark />
       </Link>
-      <nav aria-label="Site">
-        <ul className="flex items-center gap-3 text-body min-[22.5rem]:gap-5">
-          <li>
-            <Link href="/about" className="link tap">
-              {/* The full label doesn't fit beside the other links on phones narrower than 360px. */}
-              <span className="min-[22.5rem]:hidden">About</span>
-              <span className="hidden min-[22.5rem]:inline">How it works</span>
-            </Link>
-          </li>
-          <li className="hidden sm:block">
-            <Link href={STATS_PATH} className="link tap">
-              Stats
-            </Link>
-          </li>
-          {SOURCE_URL && (
-            <li className="hidden sm:block">
-              <a href={SOURCE_URL} className="link tap" target="_blank" rel="noopener noreferrer">
-                Source
-              </a>
+      {/* Phones get the same links behind a menu button (MobileMenu). */}
+      <nav aria-label="Site" className="hidden sm:block">
+        <ul className="flex items-center gap-5 text-body">
+          {LINKS.map((link) => (
+            <li key={link.href}>
+              {link.external ? (
+                <a href={link.href} className="link tap" target="_blank" rel="noopener noreferrer">
+                  {link.label}
+                </a>
+              ) : (
+                <Link href={link.href} className="link tap">
+                  {link.label}
+                </Link>
+              )}
             </li>
-          )}
+          ))}
           <li>
             <FeedbackNav />
           </li>
@@ -43,6 +44,7 @@ export function SiteHeader() {
           </li>
         </ul>
       </nav>
+      <MobileMenu links={LINKS} />
     </header>
   );
 }

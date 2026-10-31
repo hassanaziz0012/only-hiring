@@ -427,6 +427,32 @@ dialog.modal::backdrop {
   background: rgb(0 0 0 / 0.45);
 }
 
+/* The phone menu drops down from the top, where its button is. */
+dialog.menu {
+  margin: 0;
+  margin-bottom: auto;
+  width: 100%;
+  max-width: 100%;
+  max-height: 100svh;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+}
+dialog.menu[open] {
+  animation: menu-down 240ms var(--ease-out-quart);
+}
+dialog.menu::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+@keyframes menu-down {
+  from {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+}
+
 details > summary {
   list-style: none;
   cursor: pointer;

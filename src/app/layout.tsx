@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { AccountLayer } from "@/components/account/AccountLayer";
+import { FeedbackDialog } from "@/components/FeedbackNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { googleSignInEnabled } from "@/lib/auth";
 import { JsonLd, siteGraph } from "@/lib/jsonld";
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="flex-1">{children}</div>
         <SiteFooter />
         <AccountLayer googleEnabled={googleSignInEnabled()} />
+        <FeedbackDialog />
         <Analytics />
         <JsonLd data={siteGraph()} />
       </body>

@@ -20,7 +20,14 @@ function readHint(): boolean {
 const noSubscribe = () => () => {};
 
 /** "Sign in", or "Account" once signed in. */
-export function AccountNav() {
+export function AccountNav({
+  className = "link tap",
+  onOpen,
+}: {
+  className?: string;
+  /** Runs before the dialog opens, such as to close the mobile menu. */
+  onOpen?: () => void;
+}) {
   const { data: session, isPending } = authClient.useSession();
   // False during server render and hydration, so the first client render matches the HTML.
   const hint = useSyncExternalStore(noSubscribe, readHint, () => false);
@@ -37,9 +44,12 @@ export function AccountNav() {
   return (
     <button
       type="button"
-      className="link tap"
+      className={className}
       aria-haspopup="dialog"
-      onClick={() => openAccountDialog(signedIn ? "account" : "signin")}
+      onClick={() => {
+        onOpen?.();
+        openAccountDialog(signedIn ? "account" : "signin");
+      }}
     >
       {signedIn ? "Account" : "Sign in"}
     </button>

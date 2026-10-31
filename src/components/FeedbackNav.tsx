@@ -1,12 +1,55 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
 type Status = "editing" | "sending" | "sent";
 
-/** The header's "Feedback" link and the dialog it opens. Feedback is anonymous unless an email is given. */
-export function FeedbackNav() {
-  const [open, setOpen] = useState(false);
+// Whether the feedback dialog is open. Kept outside React so the desktop nav and the mobile menu
+// can both open the one dialog, which is mounted once in the root layout.
+const listeners = new Set<() => void>();
+let feedbackOpen = false;
+
+function setFeedbackOpen(next: boolean) {
+  feedbackOpen = next;
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(onChange: () => void) {
+  listeners.add(onChange);
+  return () => listeners.delete(onChange);
+}
+
+/** The "Feedback" button. Bolder, with an accent underline: feedback is the thing we most want people to find. */
+export function FeedbackNav({
+  className = "link tap",
+  onOpen,
+}: {
+  className?: string;
+  /** Runs before the dialog opens, such as to close the mobile menu. */
+  onOpen?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`${className} font-bold decoration-accent decoration-2`}
+      aria-haspopup="dialog"
+      onClick={() => {
+        onOpen?.();
+        setFeedbackOpen(true);
+      }}
+    >
+      Feedback
+    </button>
+  );
+}
+
+/** The feedback dialog. Mounted once in the root layout. Feedback is anonymous unless an email is given. */
+export function FeedbackDialog() {
+  const open = useSyncExternalStore(
+    subscribe,
+    () => feedbackOpen,
+    () => false,
+  );
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -17,32 +60,21 @@ export function FeedbackNav() {
   }, [open]);
 
   return (
-    <>
-      {/* Bolder, with an accent underline: the app is new and feedback is the thing we most want people to find. */}
-      <button
-        type="button"
-        className="link tap font-bold decoration-accent decoration-2"
-        aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
-      >
-        Feedback
-      </button>
-      <dialog
-        ref={dialogRef}
-        className="modal"
-        aria-labelledby="feedback-title"
-        onClose={() => setOpen(false)}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) setOpen(false);
-        }}
-      >
-        {open && (
-          <div className="p-6 md:p-8">
-            <FeedbackForm onClose={() => setOpen(false)} />
-          </div>
-        )}
-      </dialog>
-    </>
+    <dialog
+      ref={dialogRef}
+      className="modal"
+      aria-labelledby="feedback-title"
+      onClose={() => setFeedbackOpen(false)}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setFeedbackOpen(false);
+      }}
+    >
+      {open && (
+        <div className="p-6 md:p-8">
+          <FeedbackForm onClose={() => setFeedbackOpen(false)} />
+        </div>
+      )}
+    </dialog>
   );
 }
 
