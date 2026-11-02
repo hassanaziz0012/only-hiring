@@ -30,7 +30,8 @@ About three in four posts on subreddits like r/forhire, r/slavelabour or r/Desig
 | Jobs older than this move to a collapsed "older posts" section | 14 days | `src/lib/site.ts` |
 | Jobs at or above this scam score are hidden by default | 0.6 | `src/lib/site.ts` |
 | Jobs at or above this scam score show a warning | 0.4 | `src/lib/site.ts` |
-| Page data refreshes | every 2 hours | `src/lib/db.ts` (`cacheLife`) |
+| Lists, counts and stats refresh | after every sync (`refresh.sh`), else daily | `src/lib/db.ts` (`cacheLife`) |
+| A job's page refreshes | when a sync adds, changes or removes it, when it expires, else monthly | `src/lib/db.ts` (`getJob`) |
 
 Filtering, search and sorting run in the browser, since the dataset is small. Filters are kept in the URL, so filtered views can be shared. "Applied" marks are stored in the visitor's `localStorage`, or in their account if they sign in. Accounts are optional (email and password, or Google, via [better-auth](https://www.better-auth.com)); signing in merges the browser's marks into the account. A signed-out visitor who marks a job or opens a post on Reddit is offered an account once, then not again for 14 days after dismissing it.
 
@@ -88,6 +89,8 @@ src/
 ```
 
 This app uses Next.js 16 with Cache Components enabled (`cacheComponents: true`), so caching is done with `"use cache"` and `cacheLife` rather than `export const revalidate`.
+
+After each sync the pipeline runs `refresh.sh`, which sends `/api/revalidate` the jobs the sync added, changed or removed (from the pipeline's `last_sync.json`). Only those job pages are rebuilt: every rebuild writes the page, its prefetch segments and its image to Vercel's ISR cache, and the Hobby plan allows 200,000 writes a month. A deploy starts with a fresh cache anyway. Run `./refresh.sh --all` to rebuild every job page after changing jobs outside the pipeline, such as by hand in the database.
 
 ## Design direction
 

@@ -6,7 +6,7 @@ import { formatPay } from "./format";
 import type { Job } from "./jobs";
 
 /** What a title is built from, so the title query can select just these. */
-type TitleJob = Pick<
+export type TitleJob = Pick<
   Job,
   "id" | "jobTitle" | "subreddit" | "workMode" | "postedAt" | "payType" | "payMin" | "payMax" | "payCurrency" | "payRaw"
 >;
@@ -30,7 +30,7 @@ function role(jobTitle: string): string {
 }
 
 /** The longest title that fits: role, pay, Remote, subreddit, dropping from the end. */
-function baseTitle(job: TitleJob): string {
+export function baseTitle(job: TitleJob): string {
   const pay = formatPay(job);
   const parts = [role(job.jobTitle), pay.hasAmount ? pay.text : null, job.workMode === "remote" ? "Remote" : null].filter(
     (p): p is string => p !== null,

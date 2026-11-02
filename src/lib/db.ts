@@ -1,18 +1,55 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import { cacheLife, cacheTag } from "next/cache";
 import { JOB_COLUMNS, parseJobRow, type Job, type JobRow } from "./jobs";
-import { jobPageTitles } from "./page-title";
-import { LIST_WINDOW_DAYS } from "./site";
+import { baseTitle, jobPageTitles } from "./page-title";
+import { EXPIRY_DAYS, LIST_WINDOW_DAYS } from "./site";
 import { buildSiteStats, TOP_LANGUAGES, TOP_REGIONS, TOP_SKILLS, type FacetRow, type SiteStats } from "./stats";
 import { parseStatsRow, type StatsRow, type SubredditStats } from "./subreddits";
 
+/** The lists, counts and stats built from many jobs. Cleared after every sync. */
 export const JOBS_CACHE_TAG = "jobs";
+
+/**
+ * Everything cached for single jobs (getJob, getJobTitle), so `refresh.sh --all` can clear every job page.
+ * A sync clears only the jobs it added, changed or removed (jobTag), since each job page rebuilt writes
+ * several ISR entries (the page, its prefetch segments, its image), and bots soon revisit all of them.
+ */
+export const JOB_PAGES_TAG = "job-pages";
+
+export function jobTag(id: string): string {
+  return `job:${id}`;
+}
+
+/**
+ * Every job whose page title starts from the same base title, so a new job with that title can add the
+ * dates to the others' titles. Hashed, since Next sends tags comma-separated and titles have commas.
+ */
+export function titleTag(job: Parameters<typeof baseTitle>[0]): string {
+  return `title:${createHash("sha256").update(baseTitle(job)).digest("hex").slice(0, 16)}`;
+}
 
 // Data only changes when the pipeline syncs, and refresh.sh clears JOBS_CACHE_TAG after each sync, so the
 // timer is a backstop. It also re-renders "expired" status, which is worked out from the fetch time.
 const CACHE_LIFE = { stale: 300, revalidate: 86400, expire: 604800 };
+
+const DAY_S = 24 * 60 * 60;
+const MONTH_S = 30 * DAY_S;
+
+/**
+ * A job only changes when a sync changes it, which clears its tag, so its page is kept for a month. The one
+ * thing time changes is the "expired" status, so a job that hasn't expired yet is rebuilt just after it does.
+ */
+function jobCacheLife(job: Job | null, now: number) {
+  let revalidate = MONTH_S;
+  if (job?.postedAt) {
+    const untilExpired = Math.ceil((Date.parse(job.postedAt) + EXPIRY_DAYS * DAY_S * 1000 - now) / 1000) + 1;
+    if (untilExpired > 0) revalidate = Math.min(MONTH_S, Math.max(300, untilExpired));
+  }
+  return { stale: 300, revalidate, expire: revalidate + 7 * DAY_S };
+}
 
 export type JobsResult =
   | {
@@ -257,15 +294,17 @@ export async function getSiteStats(): Promise<SiteStats | null> {
 /** One job by ID, whatever its age, or null if there is none. Reads a single row. */
 export async function getJob(id: string): Promise<{ ok: true; job: Job | null; fetchedAt: string } | { ok: false }> {
   "use cache";
-  cacheTag(JOBS_CACHE_TAG);
-  const fetchedAt = new Date().toISOString();
+  cacheTag(JOB_PAGES_TAG, jobTag(id));
+  const now = Date.now();
+  const fetchedAt = new Date(now).toISOString();
 
   try {
     const url = process.env.WEB_DATABASE_URL;
     if (!url) throw new Error("WEB_DATABASE_URL is not set");
     const rows = (await neon(url).query(`SELECT ${JOB_COLUMNS.join(", ")} FROM jobs WHERE id = $1`, [id])) as JobRow[];
-    cacheLife(CACHE_LIFE);
-    return { ok: true, job: rows[0] ? parseJobRow(rows[0]) : null, fetchedAt };
+    const job = rows[0] ? parseJobRow(rows[0]) : null;
+    cacheLife(jobCacheLife(job, now));
+    return { ok: true, job, fetchedAt };
   } catch (error) {
     console.error("[db] could not load job:", redact(error instanceof Error ? `${error.name}: ${error.message}` : "unknown error"));
     cacheLife({ stale: 60, revalidate: 60, expire: 600 });
@@ -274,25 +313,41 @@ export async function getJob(id: string): Promise<{ ok: true; job: Job | null; f
 }
 
 /**
- * The <title> of every job page in the list window, by job ID. A title two jobs share gets each post's date,
- * so the whole window is needed, but only the handful of columns the title uses. Returns the finished
- * titles, so the cache holds a small object rather than rows.
+ * The <title> of one job's page, or null if the job isn't in the list window. A title two jobs share gets
+ * each post's date, so this reads the whole window, but only the handful of columns the title uses.
+ *
+ * Cached per job, not with the job list, so a sync doesn't rebuild every job page. It's tagged with the job
+ * and its base title: /api/revalidate clears the base titles of the jobs a sync added or changed, which
+ * rebuilds the pages of any jobs that now share one.
  */
-export async function getJobTitles(): Promise<Record<string, string>> {
+export async function getJobTitle(id: string): Promise<string | null> {
   "use cache";
-  cacheTag(JOBS_CACHE_TAG);
 
   try {
     const url = process.env.WEB_DATABASE_URL;
     if (!url) throw new Error("WEB_DATABASE_URL is not set");
     const rows = await selectRows(url, TITLE_SELECT, TITLE_KEYS, `${RECENT} ORDER BY posted_at DESC, id LIMIT 5000`, [LIST_WINDOW_DAYS]);
-    cacheLife(CACHE_LIFE);
-    return Object.fromEntries(jobPageTitles(rows.map(parseJobRow).filter((j): j is Job => j !== null)));
+    const jobs = rows.map(parseJobRow).filter((j): j is Job => j !== null);
+    const job = jobs.find((j) => j.id === id);
+    cacheTag(JOB_PAGES_TAG, jobTag(id), ...(job ? [titleTag(job)] : []));
+    cacheLife({ stale: 300, revalidate: MONTH_S, expire: MONTH_S + 7 * DAY_S });
+    return job ? (jobPageTitles(jobs).get(id) ?? null) : null;
   } catch (error) {
+    cacheTag(JOB_PAGES_TAG, jobTag(id));
     console.error("[db] could not load job titles:", redact(error instanceof Error ? `${error.name}: ${error.message}` : "unknown error"));
     cacheLife({ stale: 60, revalidate: 60, expire: 600 });
-    return {};
+    return null;
   }
+}
+
+/** The title tags (see titleTag) of the given jobs, read uncached. For /api/revalidate. */
+export async function getTitleTags(ids: string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+  const url = process.env.WEB_DATABASE_URL;
+  if (!url) throw new Error("WEB_DATABASE_URL is not set");
+  const rows = await selectRows(url, TITLE_SELECT, TITLE_KEYS, "FROM jobs WHERE id = ANY($1)", [ids]);
+  const jobs = rows.map(parseJobRow).filter((j): j is Job => j !== null);
+  return [...new Set(jobs.map(titleTag))];
 }
 
 /**

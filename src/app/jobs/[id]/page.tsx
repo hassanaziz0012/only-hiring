@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DataError } from "@/components/DataError";
 import { JobDetail } from "@/components/JobDetail";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getJob, getJobs, getJobTitles } from "@/lib/db";
+import { getJob, getJobs, getJobTitle } from "@/lib/db";
 import { isIndexable } from "@/lib/jobs";
 import { jobGraph, JsonLd } from "@/lib/jsonld";
 import { jobPageTitles } from "@/lib/page-title";
@@ -24,13 +24,13 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/jobs/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const [result, titles] = await Promise.all([getJob(id), getJobTitles()]);
+  const [result, title] = await Promise.all([getJob(id), getJobTitle(id)]);
   const job = result.ok ? result.job : null;
   if (!result.ok || !job) return { title: "Job not found", robots: { index: false } };
   const description = job.summary.length > 200 ? `${job.summary.slice(0, 197).trimEnd()}…` : job.summary;
   return {
     // Absolute: the site name would use a quarter of the space, and Google shows it from the WebSite JSON-LD.
-    title: { absolute: titles[job.id] ?? jobPageTitles([job]).get(job.id) ?? job.jobTitle },
+    title: { absolute: title ?? jobPageTitles([job]).get(job.id) ?? job.jobTitle },
     description,
     alternates: { canonical: `/jobs/${job.id}` },
     // Same rule as the sitemap: likely scams, expired, adult and thin posts stay out of search results.
