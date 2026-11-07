@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { CATEGORIES, categoryLive, isCategoryIndexable } from "@/lib/categories";
 import { getJobs, getSiteStats, getSubredditStats } from "@/lib/db";
 import { isIndexable } from "@/lib/jobs";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
@@ -19,6 +20,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const subs = result.ok
     ? SUBREDDITS.map((s) => ({ s, live: subredditLive(result.jobs, s.name, at) })).filter(({ live }) => isSubredditIndexable(live))
     : [];
+  const categories = result.ok
+    ? CATEGORIES.map((c) => ({ c, live: categoryLive(result.jobs, c, at) })).filter(({ live }) => isCategoryIndexable(live))
+    : [];
 
   return [
     // The homepage changes when a new job is listed, not on every sync.
@@ -28,6 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url(SCAM_GUIDE_PATH), lastModified: guidesChanged },
     { url: url(BEST_SUBS_PATH), lastModified: guidesChanged },
     { url: url(STATS_PATH), lastModified: siteStats?.updatedAt ?? undefined },
+    ...categories.map(({ c, live }) => ({ url: url(c.path), lastModified: live.open[0]?.postedAt ?? undefined })),
     ...subs.map(({ s, live }) => ({ url: url(subredditPath(s.name)), lastModified: live.open[0]?.postedAt ?? undefined })),
     ...listed.map((job) => ({ url: url(`/jobs/${job.id}`), lastModified: job.postedAt ?? undefined })),
   ];

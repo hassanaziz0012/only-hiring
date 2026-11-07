@@ -136,6 +136,41 @@ export function subredditGraph(sub: {
   ];
 }
 
+/** A category's page (/remote, /roles/<slug>): its open jobs as a list, under the homepage. */
+export function categoryGraph(cat: { path: string; name: string; description: string; jobs: Job[] }): Node[] {
+  const url = abs(cat.path);
+  return [
+    {
+      "@type": "CollectionPage",
+      "@id": url,
+      url,
+      name: `${cat.name} from Reddit`,
+      description: cat.description,
+      inLanguage: "en-GB",
+      isPartOf: { "@id": WEBSITE_ID() },
+      breadcrumb: { "@id": `${url}#breadcrumb` },
+      mainEntity: {
+        "@type": "ItemList",
+        numberOfItems: cat.jobs.length,
+        itemListElement: cat.jobs.map((job, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: abs(`/jobs/${job.id}`),
+          name: job.jobTitle,
+        })),
+      },
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${url}#breadcrumb`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "All jobs", item: abs("/") },
+        { "@type": "ListItem", position: 2, name: cat.name, item: url },
+      ],
+    },
+  ];
+}
+
 /** Job page: a WebPage about the Reddit post, plus its breadcrumb. */
 export function jobGraph(job: Job): Node[] {
   const url = abs(`/jobs/${job.id}`);

@@ -1,5 +1,6 @@
 import { API_JOBS_PATH, apiJobPath } from "@/lib/api";
 import { MARKDOWN_HOME_JOBS, MARKDOWN_HOME_PATH } from "@/lib/markdown";
+import { CATEGORIES } from "@/lib/categories";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { STATS_PATH } from "@/lib/stats";
 import { BEST_SUBS_PATH, SUBREDDITS, subredditPath } from "@/lib/subreddits";
@@ -39,6 +40,10 @@ How to read it (no sign-up or key needed):
 - [Stats](${url(STATS_PATH)}): every post the site has read, by type and scam score, and the jobs' roles, pay, countries, languages and skills
 - [RSS feed](${url("/feed.xml")}): the newest open jobs
 - [Sitemap](${url("/sitemap.xml")})
+
+## Kinds of work
+Each page lists the open jobs of that kind from every subreddit, describes what those posts look like, and gives their figures.
+${CATEGORIES.map((c) => `- [${c.name}](${url(c.path)}): ${c.blurb}`).join("\n")}
 
 ## Subreddits
 Each page lists the subreddit's open hiring posts, describes what gets posted there, and gives its figures.

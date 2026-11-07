@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { REMOTE } from "@/lib/categories";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { SITE_NAME, SOURCE_URL } from "@/lib/site";
 import { STATS_PATH } from "@/lib/stats";
@@ -40,6 +41,11 @@ export function SiteFooter() {
               <li>
                 <Link href="/about" className="link tap">
                   How it works
+                </Link>
+              </li>
+              <li>
+                <Link href={REMOTE.path} className="link tap">
+                  Remote jobs
                 </Link>
               </li>
               <li>

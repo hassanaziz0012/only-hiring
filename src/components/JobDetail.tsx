@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatPay, languageText, workModeText } from "@/lib/format";
 import { hasScamWarning, isExpired, isLikelyScam, scamWarningLabel, type Job } from "@/lib/jobs";
+import { categoryForRole, REMOTE } from "@/lib/categories";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { subredditPath, subredditProfile } from "@/lib/subreddits";
 import { EXPIRY_DAYS } from "@/lib/site";
@@ -48,6 +49,7 @@ function SecondaryRedditLink({ href, label, detail }: { href: string; label: str
 export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
   const pay = formatPay(job);
   const warning = scamWarningLabel(job);
+  const roleCat = categoryForRole(job.roleCategory);
   const notStated = <span className="font-normal text-muted">Not stated</span>;
   // Only link names Reddit could have produced; deleted accounts show up as "[deleted]".
   const profileUrl = job.author && /^[\w-]+$/.test(job.author) ? `https://www.reddit.com/user/${job.author}` : null;
@@ -143,10 +145,26 @@ export function JobDetail({ job, fetchedAt }: { job: Job; fetchedAt: string }) {
           )}
 
           <dl className="mt-12 grid gap-x-10 gap-y-6 sm:grid-cols-2">
-            <Fact term="Role">{labelFor(ROLE_LABELS, job.roleCategory) ?? notStated}</Fact>
+            <Fact term="Role">
+              {roleCat ? (
+                <Link href={roleCat.path} className="link">
+                  {labelFor(ROLE_LABELS, job.roleCategory)}
+                </Link>
+              ) : (
+                (labelFor(ROLE_LABELS, job.roleCategory) ?? notStated)
+              )}
+            </Fact>
             <Fact term="Seniority">{labelFor(SENIORITY_LABELS, job.seniority) ?? notStated}</Fact>
             <Fact term="Type of work">{labelFor(EMPLOYMENT_LABELS, job.employmentType) ?? notStated}</Fact>
-            <Fact term="Work mode">{workModeText(job) ?? notStated}</Fact>
+            <Fact term="Work mode">
+              {job.workMode === "remote" ? (
+                <Link href={REMOTE.path} className="link">
+                  {workModeText(job)}
+                </Link>
+              ) : (
+                (workModeText(job) ?? notStated)
+              )}
+            </Fact>
             <Fact term="Location">{job.location ?? notStated}</Fact>
             <Fact term="Pay type">{labelFor(PAY_TYPE_LABELS, job.payType) ?? notStated}</Fact>
             <Fact term="Languages">

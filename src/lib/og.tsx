@@ -68,3 +68,30 @@ export function clip(text: string, max: number): string {
   if (text.length <= max) return text;
   return `${text.slice(0, max).replace(/\s+\S*$/, "").replace(/[\s,&(/–-]+$/, "")}…`;
 }
+
+/** A category page's image (/remote, /roles/<slug>): the category, as large as fits, over the tagline. */
+export function OgCategoryCard({ noun }: { noun: string }) {
+  // The bold face runs at about 0.46em a character; long names wrap onto two lines instead of shrinking.
+  const fontSize = noun.length > 18 ? 110 : 150;
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        background: OG_COLORS.mint,
+        color: OG_COLORS.ink,
+        padding: "72px 80px",
+        fontFamily: "Pilcrow",
+      }}
+    >
+      <OgWordmark size={52} />
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <span style={{ fontSize, lineHeight: 1, letterSpacing: "-0.05em" }}>{noun.toLowerCase()}</span>
+        <span style={{ marginTop: 24, fontSize: 54, letterSpacing: "-0.03em" }}>from reddit, scam-checked</span>
+      </div>
+    </div>
+  );
+}
