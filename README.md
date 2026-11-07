@@ -1,6 +1,7 @@
 # Only Hiring
 
 [![Only Hiring - Listed on Claude AI Directory](https://www.claudeai.directory/badge/only-hiring)](https://www.claudeai.directory/launches/only-hiring)
+[![mcptry](https://mcptry.com/badge/io.github.hassanaziz0012/only-hiring)](https://mcptry.com/servers/io.github.hassanaziz0012/only-hiring)
 
 A job board for Reddit's hiring subreddits, minus the noise.
 
