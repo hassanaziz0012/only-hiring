@@ -1,5 +1,7 @@
 # Only Hiring
 
+[![Only Hiring - Listed on Claude AI Directory](https://www.claudeai.directory/badge/only-hiring)](https://www.claudeai.directory/launches/only-hiring)
+
 A job board for Reddit's hiring subreddits, minus the noise.
 
 About three in four posts on subreddits like r/forhire, r/slavelabour or r/DesignJobs are people advertising their own services, discussion or spam. This site lists only the posts where someone is actually hiring. Each job has a short summary, structured fields (pay, role, work mode, location, skills) and a link back to the original Reddit post, which is where you apply.
