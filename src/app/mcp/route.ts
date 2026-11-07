@@ -39,7 +39,7 @@ const handler = createMcpHandler(
         title: "Search jobs",
         description: `Search current hiring posts from Reddit's job subreddits, newest first. With no filters, returns the newest open jobs. Each result has pay, type, location, skills, any scam warning, the ${SITE_NAME} link and the Reddit link to apply.`,
         inputSchema: searchInput,
-        annotations: READ_ONLY,
+        annotations: { ...READ_ONLY, title: "Search jobs" },
       },
       async (input, ctx) => {
         if (input.min_pay != null && !input.pay_type) {
@@ -64,7 +64,7 @@ const handler = createMcpHandler(
             .max(300)
             .describe(`The job's ID from search_jobs, its ${SITE_NAME} link, or a link to the Reddit post.`),
         }),
-        annotations: READ_ONLY,
+        annotations: { ...READ_ONLY, title: "Get a job" },
       },
       async ({ id }, ctx) => {
         const jobId = jobIdFrom(id);
@@ -85,7 +85,7 @@ const handler = createMcpHandler(
       {
         title: "List subreddits",
         description: `The subreddits ${SITE_NAME} reads, with how many open jobs each has and what gets posted there. Use a name as search_jobs' subreddit filter.`,
-        annotations: READ_ONLY,
+        annotations: { ...READ_ONLY, title: "List subreddits" },
       },
       async (ctx) => {
         const base = origin(ctx.http?.req);
