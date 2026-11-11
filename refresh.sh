@@ -21,7 +21,7 @@ if [[ "${1:-}" == "--all" ]]; then
 fi
 production_url="https://onlyhiring.hassandev.me"
 base_url="${1:-$production_url}"
-last_sync_file="${LAST_SYNC_FILE:-$HOME/Desktop/programming/outreach-os/workflows/reddit-jobs-scraper/last_sync.json}"
+last_sync_file="${LAST_SYNC_FILE:-$HOME/Desktop/programming/only-hiring-pipeline/last_sync.json}"
 
 if [[ -z "${REVALIDATE_SECRET:-}" ]]; then
   env_file="$(dirname "$0")/.env.local"
