@@ -11,6 +11,7 @@ import {
 } from "@/lib/account-dialog";
 import { useAppliedIds } from "@/lib/applied";
 import { authClient } from "@/lib/auth-client";
+import { enableSession, useAccountSession } from "@/lib/session";
 import { countLabel } from "@/lib/format";
 import { showFilteredBoard } from "../board/hooks";
 
@@ -68,6 +69,7 @@ function CredentialsForm({ view, googleEnabled }: { view: Exclude<AccountView, "
       setError(errorMessage(error, signingUp, googleEnabled));
       return;
     }
+    enableSession();
     openAccountDialog("account");
   }
 
@@ -163,7 +165,7 @@ function CredentialsForm({ view, googleEnabled }: { view: Exclude<AccountView, "
 }
 
 function AccountSummary() {
-  const { data: session } = authClient.useSession();
+  const { data: session } = useAccountSession();
   const count = useAppliedIds().size;
   // Set while confirming a delete. Google-only accounts have no password to confirm with.
   const [deleting, setDeleting] = useState<{ hasPassword: boolean } | null>(null);
@@ -299,6 +301,8 @@ function GoogleButton({ disabled }: { disabled: boolean }) {
     const here = `${window.location.pathname}${window.location.search}`;
     // Marks saved in this browser stay in localStorage through the redirect, and are merged
     // into the account when the page loads signed in.
+    // The session is fetched when the page loads after the redirect, signed in.
+    enableSession();
     const { error } = await authClient.signIn.social({
       provider: "google",
       callbackURL: here,

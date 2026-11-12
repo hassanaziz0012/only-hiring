@@ -4,12 +4,14 @@ import { useEffect } from "react";
 import { openAccountDialog, setSignedOut } from "@/lib/account-dialog";
 import { connectAccount, disconnectAccount } from "@/lib/applied";
 import { authClient } from "@/lib/auth-client";
+import { publishSession, useAccountSession, useSessionEnabled } from "@/lib/session";
 import { AccountDialog } from "./AccountDialog";
 
 /** Mounted once in the root layout: keeps the applied marks in step with the session. */
 export function AccountLayer({ googleEnabled }: { googleEnabled: boolean }) {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending } = useAccountSession();
   const userId = session?.user.id ?? null;
+  const fetchSession = useSessionEnabled();
 
   // A failed Google sign-in comes back as ?auth=google&error=<code> (see GoogleButton).
   useEffect(() => {
@@ -30,7 +32,21 @@ export function AccountLayer({ googleEnabled }: { googleEnabled: boolean }) {
     else disconnectAccount();
   }, [userId, isPending]);
 
-  return <AccountDialog googleEnabled={googleEnabled} />;
+  return (
+    <>
+      {fetchSession && <SessionFetcher />}
+      <AccountDialog googleEnabled={googleEnabled} />
+    </>
+  );
+}
+
+/** The only place that asks the server for the session, and only while it's enabled (see lib/session.ts). */
+function SessionFetcher() {
+  const { data, isPending } = authClient.useSession();
+  useEffect(() => {
+    publishSession({ data, isPending });
+  }, [data, isPending]);
+  return null;
 }
 
 function googleErrorMessage(code: string): string {
