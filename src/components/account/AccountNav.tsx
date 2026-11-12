@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { openAccountDialog } from "@/lib/account-dialog";
 import { SESSION_HINT_KEY, useAccountSession } from "@/lib/session";
 
@@ -32,14 +32,6 @@ export function AccountNav({
   // False during server render and hydration, so the first client render matches the HTML.
   const hint = useSyncExternalStore(noSubscribe, readHint, () => false);
   const signedIn = isPending ? hint : Boolean(session);
-
-  useEffect(() => {
-    if (isPending) return;
-    try {
-      if (session) window.localStorage.setItem(HINT_KEY, "1");
-      else window.localStorage.removeItem(HINT_KEY);
-    } catch {}
-  }, [isPending, session]);
 
   return (
     <button

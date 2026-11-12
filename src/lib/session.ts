@@ -50,8 +50,28 @@ export function enableSession() {
   notify();
 }
 
-/** Called by the one component that runs authClient.useSession, while the session is enabled. */
+/**
+ * Remember, before leaving for Google, that the next page load should fetch the session. Only the hint is
+ * set: fetching now would find no session, clear the hint, and the page after the redirect would skip the
+ * fetch and look signed out.
+ */
+export function markSignInStarted() {
+  try {
+    window.localStorage.setItem(SESSION_HINT_KEY, "1");
+  } catch {}
+}
+
+/**
+ * Called by the one component that runs authClient.useSession, while the session is enabled. A real answer
+ * from the server is also the only thing that updates the hint.
+ */
 export function publishSession(next: SessionState) {
+  if (!next.isPending) {
+    try {
+      if (next.data) window.localStorage.setItem(SESSION_HINT_KEY, "1");
+      else window.localStorage.removeItem(SESSION_HINT_KEY);
+    } catch {}
+  }
   latest = next;
   notify();
 }
