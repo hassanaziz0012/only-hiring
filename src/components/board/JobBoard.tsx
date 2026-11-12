@@ -9,6 +9,7 @@ import { JobItem } from "../JobItem";
 import { FilterPanel } from "./FilterPanel";
 import {
   activeFilterCount,
+  type BoardPreview,
   DEFAULT_FILTERS,
   facetOptions,
   filtersFromSearch,
@@ -19,11 +20,35 @@ import {
   type Filters,
 } from "./filters";
 import { useMinuteClock, useUrlFilters } from "./hooks";
+import { loadBoard, loadedBoard } from "./load";
 
 // How long typing has to pause before the search is written to the URL.
 const URL_WRITE_DELAY_MS = 200;
 
-export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }) {
+const LOAD_FAILED = "The rest of the list didn't load. Reload the page to try again.";
+
+/**
+ * The homepage's board. The server renders only a preview (see BoardPreview); the full list comes from the CDN
+ * after hydration. Until it arrives, the unfiltered board shows the preview with the full list's figures, and a
+ * filtered or re-sorted one says it's loading.
+ */
+export function JobBoard({ preview, fetchedAt }: { preview: BoardPreview; fetchedAt: string }) {
+  const [full, setFull] = useState<Job[] | null>(loadedBoard);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (full) return;
+    let live = true;
+    loadBoard().then(
+      (jobs) => live && setFull(jobs),
+      () => live && setFailed(true),
+    );
+    return () => {
+      live = false;
+    };
+  }, [full]);
+  const jobs = full ?? preview.jobs;
+  const loading = full === null;
+
   const [urlFilters, setFilters] = useUrlFilters();
   const applied = useAppliedIds();
   const clock = useMinuteClock();
@@ -99,14 +124,19 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
   const groups = useMemo(() => groupJobs(view.visible, filters.sort, now, timeZone), [view.visible, filters.sort, now, timeZone]);
   const filtered = isFiltered(filters);
   const filterCount = activeFilterCount(filters);
+  // Before the full list arrives, only the unfiltered, newest-first board can be shown.
+  const waiting = loading && (filtered || filters.sort !== "newest");
+  const count = loading ? (waiting ? null : preview.open) : view.visible.length;
+  const hiddenScams = loading ? preview.scams : view.hiddenScams;
 
   const panel = (
     <FilterPanel
       filters={filters}
       onChange={update}
-      options={view.options}
-      scamCount={view.totalScams}
+      options={loading ? preview.options : view.options}
+      scamCount={loading ? preview.scams : view.totalScams}
       appliedCount={view.appliedCount}
+      pending={waiting}
     />
   );
 
@@ -165,10 +195,16 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
 
             <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 md:mt-8">
               <p className="text-lead" aria-live="polite" aria-atomic="true">
-                <strong className="tabular-nums">{countLabel(view.visible.length, "job")}</strong>{" "}
-                <span className="text-muted">
-                  {filtered ? "match" : `posted in the last ${EXPIRY_DAYS} days`}
-                </span>
+                {count === null ? (
+                  <strong>Loading jobs…</strong>
+                ) : (
+                  <>
+                    <strong className="tabular-nums">{countLabel(count, "job")}</strong>{" "}
+                    <span className="text-muted">
+                      {filtered ? "match" : `posted in the last ${EXPIRY_DAYS} days`}
+                    </span>
+                  </>
+                )}
               </p>
               <div className="flex items-center gap-5">
                 {filtered && (
@@ -187,7 +223,11 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
               </p>
             )}
 
-            {view.visible.length === 0 ? (
+            {waiting ? (
+              <p className="mt-10 text-body text-muted md:mt-14" role="status">
+                {failed ? LOAD_FAILED : "Loading the full list of jobs…"}
+              </p>
+            ) : view.visible.length === 0 ? (
               <EmptyState
                 hasJobs={jobs.length > 0}
                 olderMatches={view.olderVisible.length}
@@ -215,10 +255,16 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
               </div>
             )}
 
-            {view.hiddenScams > 0 && view.visible.length > 0 && (
-              <ScamNote count={view.hiddenScams} onShow={() => update({ showScams: true })} />
+            {loading && !waiting && preview.open > view.visible.length && (
+              <p className="mt-16 text-body text-muted" role="status">
+                {failed ? LOAD_FAILED : `Loading ${countLabel(preview.open - view.visible.length, "more job")}…`}
+              </p>
             )}
-            {filters.showScams && view.totalScams > 0 && (
+
+            {!waiting && hiddenScams > 0 && view.visible.length > 0 && (
+              <ScamNote count={hiddenScams} onShow={() => update({ showScams: true })} />
+            )}
+            {!waiting && filters.showScams && view.totalScams > 0 && (
               <p className="mt-16 text-body">
                 Likely scams are showing, marked in pink.{" "}
                 <button type="button" className="link font-bold" onClick={() => update({ showScams: false })}>
@@ -230,7 +276,7 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
         </div>
       </div>
 
-      {older.length > 0 && (
+      {!loading && older.length > 0 && (
         <OlderPosts jobs={view.olderVisible} total={older.length} now={now} timeZone={timeZone} applied={applied} />
       )}
 
@@ -257,7 +303,7 @@ export function JobBoard({ jobs, fetchedAt }: { jobs: Job[]; fetchedAt: string }
               Clear
             </button>
             <button type="button" className="btn flex-[2]" onClick={() => dialogRef.current?.close()}>
-              Show {countLabel(view.visible.length, "job")}
+              {count === null ? "Show jobs" : `Show ${countLabel(count, "job")}`}
             </button>
           </div>
         </div>

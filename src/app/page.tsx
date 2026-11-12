@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BackToTop } from "@/components/BackToTop";
+import { boardPreview } from "@/components/board/filters";
 import { JobBoard } from "@/components/board/JobBoard";
 import { DataError } from "@/components/DataError";
 import { ExactTime } from "@/components/RelativeTime";
@@ -79,7 +80,7 @@ export default async function Home() {
 
       <main id="main">
         {result.ok ? (
-          <JobBoard jobs={result.jobs} fetchedAt={result.fetchedAt} />
+          <JobBoard preview={boardPreview(result.jobs, Date.parse(result.fetchedAt))} fetchedAt={result.fetchedAt} />
         ) : (
           <DataError />
         )}

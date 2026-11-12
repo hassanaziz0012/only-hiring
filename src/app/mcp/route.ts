@@ -9,6 +9,10 @@ import { SITE_NAME, siteUrl } from "@/lib/site";
 // are uncached POSTs, and on serverless an in-memory "use cache" entry rarely survives between them, so each
 // call would read the whole list from Neon (see the note above LIST_OMITTED in lib/db.ts).
 
+// Every tool answers in about a second. Without a cap, a client that leaves its request open held a function
+// until the platform's 300s limit, 50–120 times a day, which used most of the plan's provisioned memory.
+export const maxDuration = 30;
+
 // Deployed, read production's JSON: preview deployments sit behind Vercel's login. Locally, read this server's own.
 const origin = (req: Request | undefined) => (process.env.VERCEL || !req ? siteUrl() : new URL(new URL(req.url).origin));
 

@@ -13,6 +13,7 @@ function FacetGroup({
   onChange,
   collapsible = false,
   noun = "roles",
+  pending = false,
 }: {
   title: string;
   facet: Facet;
@@ -21,6 +22,8 @@ function FacetGroup({
   onChange: (patch: Partial<Filters>) => void;
   collapsible?: boolean;
   noun?: string;
+  /** The counts are from the unfiltered board, until the full list arrives: hide them and disable nothing. */
+  pending?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const selected = filters[facet];
@@ -45,15 +48,17 @@ function FacetGroup({
               type="button"
               className="toggle"
               aria-pressed={isOn}
-              disabled={!isOn && option.count === 0}
+              disabled={!pending && !isOn && option.count === 0}
               onClick={() => toggle(option.value)}
             >
               <span>{option.label}</span>
-              <span className="count">
-                <span className="sr-only">, </span>
-                {option.count}
-                <span className="sr-only"> jobs</span>
-              </span>
+              {!pending && (
+                <span className="count">
+                  <span className="sr-only">, </span>
+                  {option.count}
+                  <span className="sr-only"> jobs</span>
+                </span>
+              )}
             </button>
           );
         })}
@@ -125,41 +130,45 @@ export function FilterPanel({
   options,
   scamCount,
   appliedCount,
+  pending = false,
 }: {
   filters: Filters;
   onChange: (patch: Partial<Filters>) => void;
   options: Record<Facet, FacetOption[]>;
   scamCount: number;
   appliedCount: number;
+  pending?: boolean;
 }) {
   return (
     <div className="space-y-9">
       {(appliedCount > 0 || filters.applied !== "all") && (
         <AppliedGroup value={filters.applied} count={appliedCount} onChange={onChange} />
       )}
-      <FacetGroup title="Role" facet="roles" options={options.roles} filters={filters} onChange={onChange} collapsible />
-      <FacetGroup title="Experience" facet="levels" options={options.levels} filters={filters} onChange={onChange} />
-      <FacetGroup title="Work mode" facet="modes" options={options.modes} filters={filters} onChange={onChange} />
+      <FacetGroup title="Role" facet="roles" options={options.roles} filters={filters} onChange={onChange} pending={pending} collapsible />
+      <FacetGroup title="Experience" facet="levels" options={options.levels} filters={filters} onChange={onChange} pending={pending} />
+      <FacetGroup title="Work mode" facet="modes" options={options.modes} filters={filters} onChange={onChange} pending={pending} />
       <FacetGroup
         title="Remote region"
         facet="regions"
         options={options.regions}
         filters={filters}
         onChange={onChange}
+        pending={pending}
         collapsible
         noun="regions"
       />
-      <FacetGroup title="Pay" facet="pay" options={options.pay} filters={filters} onChange={onChange} />
+      <FacetGroup title="Pay" facet="pay" options={options.pay} filters={filters} onChange={onChange} pending={pending} />
       <FacetGroup
         title="Language"
         facet="languages"
         options={options.languages}
         filters={filters}
         onChange={onChange}
+        pending={pending}
         collapsible
         noun="languages"
       />
-      <FacetGroup title="Test task" facet="tests" options={options.tests} filters={filters} onChange={onChange} />
+      <FacetGroup title="Test task" facet="tests" options={options.tests} filters={filters} onChange={onChange} pending={pending} />
       <fieldset>
         <legend className="text-body font-bold">More</legend>
         <div className="mt-2">

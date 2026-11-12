@@ -1,7 +1,7 @@
 // Filter state, URL encoding, matching, faceting and grouping for the job board.
 
 import { countLabel, dayKey, dayLabel, formatPay, payRank, workModeText } from "@/lib/format";
-import { isLikelyScam, type Job } from "@/lib/jobs";
+import { isExpired, isLikelyScam, type Job } from "@/lib/jobs";
 import {
   EMPLOYMENT_LABELS,
   labelFor,
@@ -298,4 +298,45 @@ export function groupJobs(jobs: Job[], sort: Sort, now: number, timeZone?: strin
 
 export function resultSummary(n: number): string {
   return countLabel(n, "job");
+}
+
+/**
+ * What the homepage renders before the full list arrives from /api/board: the newest open jobs, plus the
+ * figures the unfiltered board shows (counts, facet options), worked out from every job.
+ *
+ * The homepage used to render all of the list window's jobs, older ones included: 3 MB of HTML that every bot and
+ * every prefetch of "/" downloaded, and that each sync wrote to the ISR cache again.
+ */
+export type BoardPreview = {
+  /** The newest open jobs, ending at the end of a day (UTC, as the server renders), so no day's count is cut short. */
+  jobs: Job[];
+  /** Open jobs the unfiltered board lists. */
+  open: number;
+  /** Likely scams among the open jobs, hidden by default. */
+  scams: number;
+  options: Record<Facet, FacetOption[]>;
+};
+
+const PREVIEW_MIN_JOBS = 30;
+
+export function boardPreview(jobs: Job[], now: number): BoardPreview {
+  const fresh = jobs.filter((j) => !isExpired(j, now));
+  // The default filters match every job, so the unfiltered list is everything the scam rule lets through.
+  const pool = fresh.filter((j) => visibleByScamRule(j, DEFAULT_FILTERS));
+  const day = (j: Job) => (j.postedAt ? dayKey(j.postedAt, "UTC") : "unknown");
+  let end = Math.min(pool.length, PREVIEW_MIN_JOBS);
+  if (end > 0) {
+    const last = day(pool[end - 1]);
+    while (end < pool.length && day(pool[end]) === last) end++;
+  }
+  const none = new Set<string>();
+  return {
+    jobs: pool.slice(0, end),
+    open: pool.length,
+    scams: fresh.length - pool.length,
+    options: Object.fromEntries(FACETS.map((facet) => [facet, facetOptions(pool, DEFAULT_FILTERS, none, facet)])) as Record<
+      Facet,
+      FacetOption[]
+    >,
+  };
 }
