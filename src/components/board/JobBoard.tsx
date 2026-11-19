@@ -12,6 +12,7 @@ import {
   type BoardPreview,
   DEFAULT_FILTERS,
   facetOptions,
+  feedSearch,
   filtersFromSearch,
   groupJobs,
   isFiltered,
@@ -124,6 +125,8 @@ export function JobBoard({ preview, fetchedAt }: { preview: BoardPreview; fetche
   const groups = useMemo(() => groupJobs(view.visible, filters.sort, now, timeZone), [view.visible, filters.sort, now, timeZone]);
   const filtered = isFiltered(filters);
   const filterCount = activeFilterCount(filters);
+  // The same filters as an RSS feed, when any of them carry over (the applied filter doesn't).
+  const feedQuery = feedSearch(urlFilters);
   // Before the full list arrives, only the unfiltered, newest-first board can be shown.
   const waiting = loading && (filtered || filters.sort !== "newest");
   const count = loading ? (waiting ? null : preview.open) : view.visible.length;
@@ -207,6 +210,11 @@ export function JobBoard({ preview, fetchedAt }: { preview: BoardPreview; fetche
                 )}
               </p>
               <div className="flex items-center gap-5">
+                {feedQuery && (
+                  <a href={`/feed.xml${feedQuery}`} className="link text-body" type="application/rss+xml">
+                    RSS for these filters
+                  </a>
+                )}
                 {filtered && (
                   <button type="button" className="link text-body font-bold" onClick={clear}>
                     Clear filters

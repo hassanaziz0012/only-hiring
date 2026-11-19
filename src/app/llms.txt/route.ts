@@ -38,7 +38,7 @@ How to read it (no sign-up or key needed):
 - [Reddit job scams](${url(SCAM_GUIDE_PATH)}): how scams on Reddit's job subreddits work, with figures from the jobs this site has graded
 - [Best subreddits for jobs](${url(BEST_SUBS_PATH)}): every subreddit the site reads, ranked by hiring posts, with the share that are hiring and median pay
 - [Stats](${url(STATS_PATH)}): every post the site has read, by type and scam score, and the jobs' roles, pay, countries, languages and skills
-- [RSS feed](${url("/feed.xml")}): the newest open jobs
+- [RSS feed](${url("/feed.xml")}): the newest open jobs. Takes the homepage's filter query, e.g. ${url("/feed.xml?role=web_development&mode=remote")}
 - [Sitemap](${url("/sitemap.xml")})
 
 ## Kinds of work

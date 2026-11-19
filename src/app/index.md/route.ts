@@ -65,7 +65,7 @@ export async function GET() {
     "",
     `- [llms.txt](${url("/llms.txt")}): what this site is for and when to use it, with every page`,
     `- [How it works](${url("/about")}): pipeline, scam scoring, data policy`,
-    `- [RSS feed](${url("/feed.xml")}): the newest open jobs`,
+    `- [RSS feed](${url("/feed.xml")}): the newest open jobs. Takes the homepage's filter query, e.g. ${url("/feed.xml?role=web_development&mode=remote")}`,
     `- [Sitemap](${url("/sitemap.xml")})`,
     "",
   );

@@ -96,6 +96,14 @@ export function filtersToSearch(f: Filters): string {
   return s ? `?${s}` : "";
 }
 
+/**
+ * The filters an RSS feed can use, as a query string for /feed.xml. A feed is always newest first, never
+ * includes likely scams, and has no visitor to know the applied jobs of, so sort, scams and applied are dropped.
+ */
+export function feedSearch(f: Filters): string {
+  return filtersToSearch({ ...f, q: f.q.trim(), sort: "newest", showScams: false, applied: "all" });
+}
+
 /** Number of narrowing filters in use (search, sort and the scam reveal don't count). */
 export function activeFilterCount(f: Filters): number {
   return (
@@ -206,6 +214,32 @@ const FACET_LABELS: Record<Facet, Record<string, string>> = {
   languages: {},
   tests: { paid: "Paid", unpaid: "Unpaid", pay_not_stated: "Pay not stated" },
 };
+
+const FACET_NAMES: Record<Facet, string> = {
+  roles: "Role",
+  levels: "Level",
+  modes: "Work mode",
+  regions: "Region",
+  pay: "Pay",
+  languages: "Language",
+  tests: "Test task",
+};
+
+/** The narrowing filters in words, e.g. `Role: Developer · Work mode: Remote or not stated`, or "" if none. */
+export function filterSummary(f: Filters): string {
+  const parts: string[] = [];
+  if (f.q.trim()) parts.push(`Search: "${f.q.trim()}"`);
+  for (const facet of FACETS) {
+    if (!f[facet].length) continue;
+    const labels = f[facet].map((v) =>
+      v === NONE ? (NONE_LABELS[facet] ?? "Not stated") : (labelFor(FACET_LABELS[facet], v) ?? v),
+    );
+    parts.push(`${FACET_NAMES[facet]}: ${labels.join(" or ")}`);
+  }
+  if (f.hideCommission) parts.push("No commission-only jobs");
+  if (f.hideNative) parts.push("No jobs that need a native speaker");
+  return parts.join(" · ");
+}
 
 /** Facets whose options are ordered by count rather than kept in their natural order. */
 const BY_COUNT: ReadonlySet<Facet> = new Set(["roles", "regions", "languages"]);
