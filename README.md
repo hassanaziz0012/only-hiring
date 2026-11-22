@@ -5,6 +5,8 @@
 
 A job board for Reddit's hiring subreddits, minus the noise.
 
+![only-hiring — filter Reddit's hiring posts by role, work mode and skill, then open a job's summary](https://raw.githubusercontent.com/yasirwhite/opendemo-media/main/hassanaziz0012-only-hiring/only-hiring-demo.gif)
+
 About three in four posts on subreddits like r/forhire, r/slavelabour or r/DesignJobs are people advertising their own services, discussion or spam. This site lists only the posts where someone is actually hiring. Each job has a short summary, structured fields (pay, role, work mode, location, skills) and a link back to the original Reddit post, which is where you apply.
 
 ## How it works
