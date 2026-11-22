@@ -2,6 +2,7 @@ import "server-only";
 
 import { Pool } from "@neondatabase/serverless";
 import { betterAuth } from "better-auth";
+import { googleSignInEnabled } from "./google-sign-in";
 import { siteUrl } from "./site";
 
 // Optional accounts, so "applied" marks survive cleared browser data and follow the visitor
@@ -18,11 +19,6 @@ function allowedHosts(): string[] {
   const hosts = [siteUrl().host, process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL];
   if (!process.env.VERCEL) hosts.push("localhost:*", "127.0.0.1:*");
   return hosts.filter((h): h is string => Boolean(h));
-}
-
-/** Whether the Google button is offered. Read at build time by the root layout. */
-export function googleSignInEnabled(): boolean {
-  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
 export const accountsDb = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -53,6 +49,10 @@ export const auth = betterAuth({
   },
   // Serverless instances don't share memory, so count attempts in the database.
   rateLimit: { enabled: true, storage: "database" },
+  // On by default, and it inspects the whole schema as soon as this module loads, which wakes the Neon
+  // compute (billed for at least 5 minutes) on every cold start. After changing the options above, compare
+  // the tables with db/schema.sql by hand.
+  advanced: { database: { validateSchema: false } },
 });
 
 /** The signed-in user's id for this request, or null. */

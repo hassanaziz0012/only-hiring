@@ -88,6 +88,7 @@ src/
     format.ts             pay, date and time formatting
     applied.ts            the "applied" store: localStorage, or the account when signed in
     auth.ts               better-auth config and the accounts database (server-only)
+    google-sign-in.ts     whether Google sign-in is set up, kept out of auth.ts so pages don't load it
     site.ts               site name, thresholds, removal contact
 ```
 

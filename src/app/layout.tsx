@@ -4,7 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { AccountLayer } from "@/components/account/AccountLayer";
 import { FeedbackDialog } from "@/components/FeedbackNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { googleSignInEnabled } from "@/lib/auth";
+import { googleSignInEnabled } from "@/lib/google-sign-in";
 import { JsonLd, siteGraph } from "@/lib/jsonld";
 import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 import "./globals.css";
