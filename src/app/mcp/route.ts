@@ -5,9 +5,8 @@ import { jobIdFrom, renderJob, renderSearch, renderSubreddits, searchInput, sear
 import { SITE_NAME, siteUrl } from "@/lib/site";
 
 // The MCP server, at /mcp over Streamable HTTP. Public and read-only, like the site, so there's no auth.
-// Tools read the prerendered JSON at /api/jobs through the CDN rather than querying the database: tool calls
-// are uncached POSTs, and on serverless an in-memory "use cache" entry rarely survives between them, so each
-// call would read the whole list from Neon (see the note above LIST_OMITTED in lib/db.ts).
+// Tools read the prerendered JSON at /api/jobs through the CDN, the same public API anyone can use, rather
+// than loading the data files in this function on every cold start.
 
 // Every tool answers in about a second. Without a cap, a client that leaves its request open held a function
 // until the platform's 300s limit, 50–120 times a day, which used most of the plan's provisioned memory.
@@ -16,7 +15,7 @@ export const maxDuration = 30;
 // Deployed, read production's JSON: preview deployments sit behind Vercel's login. Locally, read this server's own.
 const origin = (req: Request | undefined) => (process.env.VERCEL || !req ? siteUrl() : new URL(new URL(req.url).origin));
 
-// A warm instance answers repeat calls without refetching. The CDN copy only changes after a sync anyway.
+// A warm instance answers repeat calls without refetching. The CDN copy only changes with a deploy anyway.
 const LIST_TTL_MS = 5 * 60 * 1000;
 let listCache: { at: number; list: ApiJobList } | null = null;
 

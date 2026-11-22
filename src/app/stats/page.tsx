@@ -4,7 +4,7 @@ import { DataError } from "@/components/DataError";
 import { ProseSection } from "@/components/ProseSection";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StatsShare } from "@/components/StatsShare";
-import { getSiteStats } from "@/lib/db";
+import { getSiteStats } from "@/lib/data";
 import { SITE_NAME } from "@/lib/site";
 import {
   num,

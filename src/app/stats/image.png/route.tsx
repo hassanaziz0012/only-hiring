@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import type { ReactNode } from "react";
-import { getSiteStats } from "@/lib/db";
+import { getSiteStats } from "@/lib/data";
 import { OG_FONTS_WITH_REGULAR, OgWordmark } from "@/lib/og";
 import { siteUrl } from "@/lib/site";
 import { num, pct, SCAM_BANDS, statsDate, type Bar, type SiteStats } from "@/lib/stats";

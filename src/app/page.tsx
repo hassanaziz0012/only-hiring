@@ -6,7 +6,7 @@ import { JobBoard } from "@/components/board/JobBoard";
 import { DataError } from "@/components/DataError";
 import { ExactTime } from "@/components/RelativeTime";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getJobs } from "@/lib/db";
+import { getJobs } from "@/lib/data";
 import { countLabel } from "@/lib/format";
 import { isExpired, isIndexable, isLikelyScam } from "@/lib/jobs";
 import { homeCollection, JsonLd } from "@/lib/jsonld";

@@ -1,13 +1,14 @@
 // The figures behind /stats and its share image: what every post we've read turned out to be, and what
 // the listed jobs ask for. Pure, so the page and the image route build exactly the same numbers.
 // Two sources, as with the guides (see lib/subreddits.ts):
-// - subreddit_stats: every post the pipeline has graded, hiring or not, reposts counted once.
-// - the jobs table: the hiring posts currently on the site (posts deleted from Reddit are taken down).
+// - data/subreddit-stats.json: every post the pipeline has graded, hiring or not, reposts counted once.
+// - data/jobs.json: the hiring posts currently on the site (posts deleted from Reddit are taken down).
 
 import { formatMoney } from "./format";
 import { EMPLOYMENT_LABELS, labelFor, ROLE_LABELS, SENIORITY_LABELS, TEST_TASK_LABELS } from "./labels";
 import { SCAM_HIDE_THRESHOLD, SCAM_WARN_THRESHOLD } from "./site";
-import { MIN_PAY_SAMPLE } from "./subreddits";
+import type { Job } from "./jobs";
+import { MIN_PAY_SAMPLE, sumStats, type SubredditStats } from "./subreddits";
 
 export const STATS_PATH = "/stats";
 /** The share image of everything on the page. */
@@ -67,7 +68,7 @@ export const SCAM_BANDS: { key: keyof ScamBands; label: string; range: string; c
   { key: "likely", label: "Likely scam, hidden", range: `${SCAM_HIDE_THRESHOLD} or more`, color: "scale-likely" },
 ];
 
-/** Rows of the facet query: which breakdown, the raw value ('' for none) and how many jobs. */
+/** One count: which breakdown, the raw value ('' for none) and how many jobs. */
 export type FacetRow = { facet: string; key: string; n: number };
 
 /** Long lists are cut to this many rows, with the rest folded into "Other" where that means something. */
@@ -114,22 +115,92 @@ function ranked(bars: Bar[], top: number, rest?: string): Bar[] {
   return [...sorted.slice(0, top), ...(rest && tail > 0 ? [{ label: rest, n: tail, muted: true }] : [])];
 }
 
-export type RawStats = {
-  /** Sums over subreddit_stats. */
-  totals: Record<string, number>;
-  changedAt: string | null;
-  subs: { subreddit: string; hiring: number }[];
+export type JobStats = {
   facets: FacetRow[];
   jobs: { listed: number; withLanguage: number; withPay: number; withTest: number; restrictedRemote: number };
-  firstSyncedAt: string | null;
-  syncedAt: string | null;
   medians: { payType: string; n: number; median: number }[];
 };
 
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** The breakdowns of every job on the site. */
+export function jobStats(jobs: Job[]): JobStats {
+  const counts = new Map<string, FacetRow>();
+  const count = (facet: string, key: string) => {
+    const id = `${facet}:${key}`;
+    const row = counts.get(id) ?? { facet, key, n: 0 };
+    row.n += 1;
+    counts.set(id, row);
+  };
+
+  // Languages show up as skills too ("English"); they have their own breakdown, so they're left out of the skills.
+  const languages = new Set(jobs.flatMap((j) => j.languages.map((l) => l.language.toLowerCase())));
+  // Skills are free text, so they're grouped case-insensitively under their most common spelling.
+  const skills = new Map<string, { n: number; spellings: Map<string, number> }>();
+  const pay = new Map<string, number[]>();
+
+  for (const job of jobs) {
+    count("role", job.roleCategory ?? "");
+    count("mode", job.workMode === "remote" ? `remote_${job.remoteScope ?? "unstated"}` : (job.workMode ?? ""));
+    count("employment", job.employmentType ?? "");
+    count("seniority", job.seniority ?? "");
+    count("test", job.testTask ?? "");
+    if (job.workMode === "remote" && job.remoteScope === "restricted") new Set(job.remoteRegions).forEach((r) => count("region", r));
+    new Set(job.languages.map((l) => l.language)).forEach((l) => count("language", l));
+
+    const seen = new Set<string>();
+    for (const skill of job.skills) {
+      const key = skill.toLowerCase();
+      if (languages.has(key)) continue;
+      const entry = skills.get(key) ?? { n: 0, spellings: new Map<string, number>() };
+      skills.set(key, entry);
+      entry.spellings.set(skill, (entry.spellings.get(skill) ?? 0) + 1);
+      if (!seen.has(key)) entry.n += 1;
+      seen.add(key);
+    }
+
+    // The midpoint of each stated range, as site_stats.py takes it for the per-subreddit medians.
+    const low = job.payMin ?? job.payMax;
+    const high = job.payMax ?? job.payMin;
+    if (job.payCurrency === "USD" && job.payType && low != null && high != null) {
+      pay.set(job.payType, [...(pay.get(job.payType) ?? []), (low + high) / 2]);
+    }
+  }
+
+  for (const { n, spellings } of skills.values()) {
+    const [spelling] = [...spellings].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
+    counts.set(`skill:${spelling}`, { facet: "skill", key: spelling, n });
+  }
+
+  return {
+    facets: [...counts.values()],
+    jobs: {
+      listed: jobs.length,
+      withLanguage: jobs.filter((j) => j.languages.length > 0).length,
+      withPay: jobs.filter((j) => j.payMin != null || j.payMax != null).length,
+      withTest: jobs.filter((j) => j.testTask != null).length,
+      restrictedRemote: jobs.filter((j) => j.workMode === "remote" && j.remoteScope === "restricted").length,
+    },
+    medians: [...pay].map(([payType, values]) => ({ payType, n: values.length, median: median(values) })),
+  };
+}
+
+export type RawStats = JobStats & {
+  subs: SubredditStats[];
+  changedAt: string | null;
+  firstSyncedAt: string | null;
+  syncedAt: string | null;
+};
+
 export function buildSiteStats(raw: RawStats): SiteStats {
-  const t = (key: string) => raw.totals[key] ?? 0;
+  const t = sumStats(raw.subs);
+  const subs = raw.subs.filter((s) => s.graded > 0);
   const facet = (name: string) => raw.facets.filter((r) => r.facet === name);
-  const hiring = t("hiring");
+  const hiring = t.hiring;
 
   // "other" is a real role category, so it joins the folded tail rather than taking a slot.
   const roleRows = facet("role");
@@ -147,37 +218,37 @@ export function buildSiteStats(raw: RawStats): SiteStats {
   return {
     updatedAt: stamps.length > 0 ? new Date(Math.max(...stamps)).toISOString() : null,
     collectingSince: raw.firstSyncedAt,
-    subreddits: raw.subs.length,
-    read: t("graded"),
+    subreddits: subs.length,
+    read: t.graded,
     hiring,
     postTypes: [
       { label: "Hiring", n: hiring },
       // Everything that wasn't hiring is what the site filters out, so it's drawn quieter.
-      { label: "Questions and discussion", n: t("discussion"), muted: true },
-      { label: "Offering their services", n: t("for_hire"), muted: true },
-      { label: "Spam and promotion", n: t("spam"), muted: true },
-      { label: "Unpaid collaboration", n: t("unpaid"), muted: true },
-      { label: "Something else", n: t("other"), muted: true },
-      { label: "Clearly not hiring, not graded", n: t("prefiltered"), muted: true },
+      { label: "Questions and discussion", n: t.discussion, muted: true },
+      { label: "Offering their services", n: t.forHire, muted: true },
+      { label: "Spam and promotion", n: t.spam, muted: true },
+      { label: "Unpaid collaboration", n: t.unpaid, muted: true },
+      { label: "Something else", n: t.other, muted: true },
+      { label: "Clearly not hiring, not graded", n: t.prefiltered, muted: true },
     ].filter((b) => b.n > 0),
     scam: {
-      clean: t("clean"),
-      doubts: Math.max(0, hiring - t("clean") - t("warned")),
-      warned: t("warned") - t("likely"),
-      likely: t("likely"),
+      clean: t.clean,
+      doubts: Math.max(0, hiring - t.clean - t.warned),
+      warned: t.warned - t.likely,
+      likely: t.likely,
     },
     flags: [
-      { label: "Vague about the work", n: t("flag_vague") },
-      { label: "Low pay for the work", n: t("flag_low_pay") },
-      { label: "Free work: samples, tests", n: t("flag_free_work") },
-      { label: "Pay that seems too high", n: t("flag_high_pay") },
-      { label: "Handling money for them", n: t("flag_money") },
+      { label: "Vague about the work", n: t.flags.vague },
+      { label: "Low pay for the work", n: t.flags.lowPay },
+      { label: "Free work: samples, tests", n: t.flags.freeWork },
+      { label: "Pay that seems too high", n: t.flags.highPay },
+      { label: "Handling money for them", n: t.flags.money },
     ].sort(byCount),
-    removedByReddit: t("removed"),
+    removedByReddit: t.removedWarned + t.removedUnwarned,
     bySubreddit: ranked(
-      raw.subs.map((s) => ({ label: `r/${s.subreddit}`, n: s.hiring })),
+      subs.map((s) => ({ label: `r/${s.subreddit}`, n: s.hiring })),
       TOP_SUBREDDITS,
-      raw.subs.length > TOP_SUBREDDITS ? `${raw.subs.length - TOP_SUBREDDITS} more subreddits` : undefined,
+      subs.length > TOP_SUBREDDITS ? `${subs.length - TOP_SUBREDDITS} more subreddits` : undefined,
     ),
     listed: raw.jobs.listed,
     roles,

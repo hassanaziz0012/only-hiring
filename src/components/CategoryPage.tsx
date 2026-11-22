@@ -6,7 +6,7 @@ import { ProseSection } from "@/components/ProseSection";
 import { ExactTime } from "@/components/RelativeTime";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CATEGORIES, categoryLive, isCategoryIndexable, type CategoryLive, type CategoryProfile } from "@/lib/categories";
-import { getJobs } from "@/lib/db";
+import { getJobs } from "@/lib/data";
 import { countLabel, workModeText } from "@/lib/format";
 import { categoryGraph, JsonLd } from "@/lib/jsonld";
 import { EMPLOYMENT_LABELS, labelFor, ROLE_LABELS } from "@/lib/labels";

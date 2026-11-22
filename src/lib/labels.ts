@@ -1,4 +1,4 @@
-// Human labels for the enum-like text columns. The database doesn't constrain these,
+// Human labels for the enum-like text columns. The pipeline's export doesn't constrain these,
 // so every lookup falls back to the raw string instead of failing.
 
 export const ROLE_LABELS: Record<string, string> = {

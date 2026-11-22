@@ -1,5 +1,5 @@
 // The public JSON shapes served by /api/jobs and /api/jobs/[id], which the MCP server (src/app/mcp) reads too.
-// Pure functions: no database access. Enum-like fields keep the pipeline's raw keys (see lib/labels.ts), so
+// Pure functions: they never read the data files. Enum-like fields keep the pipeline's raw keys (see lib/labels.ts), so
 // clients can filter on them; `pay.text` and `where` are the site's own display strings.
 
 import { formatPay, locationText, workModeText } from "./format";
@@ -50,9 +50,9 @@ export type ApiJobDetail = ApiJob & {
 };
 
 export type ApiJobList = {
-  /** When this snapshot was read from the database (ISO). */
+  /** When this list was built (ISO). */
   fetchedAt: string;
-  /** Most recent pipeline sync (ISO), or null if unknown. */
+  /** When the pipeline last updated the jobs (ISO), or null if unknown. */
   syncedAt: string | null;
   /** Every job posted within the list window, newest first, likely scams included. */
   jobs: ApiJob[];

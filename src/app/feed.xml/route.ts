@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   return new Response(xml, {
     headers: {
       "Content-Type": "application/rss+xml; charset=utf-8",
-      // Don't let the CDN keep a failed read for half an hour.
+      // Don't let the CDN keep a feed without data for half an hour.
       "Cache-Control": ok ? CDN_CACHE : "public, max-age=60, s-maxage=60",
     },
   });

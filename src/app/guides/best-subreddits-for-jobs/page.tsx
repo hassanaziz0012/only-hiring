@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ProseSection as Section } from "@/components/ProseSection";
 import { SiteHeader } from "@/components/SiteHeader";
 import { DataError } from "@/components/DataError";
-import { getJobs, getSubredditStats } from "@/lib/db";
+import { getJobs, getSubredditStats } from "@/lib/data";
 import { countLabel } from "@/lib/format";
 import { hasScamWarning, isExpired, isLikelyScam } from "@/lib/jobs";
 import { guideGraph, JsonLd } from "@/lib/jsonld";
@@ -21,7 +21,7 @@ import {
   type SubredditStats,
 } from "@/lib/subreddits";
 
-/** When the guide was first published. Its figures change with every sync. */
+/** When the guide was first published. Its figures change with every deploy. */
 const PUBLISHED = "2026-10-21";
 
 const headline = "The best subreddits for jobs, ranked by real hiring posts";

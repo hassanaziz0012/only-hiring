@@ -1,7 +1,7 @@
 import "server-only";
 
 import { feedSearch, filterSummary, filtersFromSearch, matches } from "@/components/board/filters";
-import { getJobs } from "./db";
+import { getJobs } from "./data";
 import { formatPay } from "./format";
 import { isIndexable } from "./jobs";
 import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "./site";

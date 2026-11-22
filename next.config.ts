@@ -10,9 +10,11 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // By default Next skips the CDN cache for a list of bots (Bingbot, Twitterbot, Applebot...) and renders the page
   // for each of their visits, so streamed metadata ends up in the <head>. Every page here has its metadata in the
-  // prerendered <head> already, and each render can wake the database. This matches no bot, so they get the cached
+  // prerendered <head> already, so rendering it again per visit is wasted. This matches no bot, so they get the cached
   // page. (No lookaheads: the pattern also goes into Vercel's routing config.)
   htmlLimitedBots: /only-hiring-matches-no-bot/,
+  // The job data, read at runtime by the pages and feeds that aren't prerendered (src/lib/data.ts).
+  outputFileTracingIncludes: { "/*": ["./data/*.json"] },
   // The CSP only sets frame-ancestors, so the site can't be framed for clickjacking. A full policy would
   // need nonces or hashes for Next's inline scripts.
   // The bare /r goes to the guide that lists every subreddit page. Temporary, in case /r gets a page of its own.

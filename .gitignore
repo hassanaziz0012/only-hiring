@@ -37,6 +37,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Job data written by the pipeline and deployed by scripts/deploy.mjs. Never commit: posts and usernames removed
+# from Reddit would stay in this public repo's history.
+/data/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

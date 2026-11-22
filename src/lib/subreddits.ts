@@ -1,9 +1,9 @@
 // The subreddits the pipeline reads, each with a hand-written profile for its page at /r/<slug>, and
 // the figures behind those pages and the guides. Two sources, both live:
-// - subreddit_stats: cumulative counts over every post the pipeline has graded, hiring or not,
-//   written by the pipeline's sync (site_stats.py). The jobs table can't give these: it only holds
+// - data/subreddit-stats.json: cumulative counts over every post the pipeline has graded, hiring or not,
+//   written by the pipeline's export (site_stats.py). The jobs file can't give these: it only holds
 //   published hiring posts.
-// - the jobs table: what's open right now (subredditLive).
+// - data/jobs.json: what's open right now (subredditLive).
 // The profile copy is hand-written, so it avoids exact figures that would go stale.
 
 import { formatMoney } from "./format";

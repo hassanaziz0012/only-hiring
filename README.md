@@ -11,20 +11,17 @@ About three in four posts on subreddits like r/forhire, r/slavelabour or r/Desig
 
 ```
 [private pipeline (not in this repo)]
-  scrape new posts → grade each post with a language model → sync to Postgres
-                                                                   │ writes
-                                                                   ▼
-                                                          Neon Postgres, `jobs` table
-                                                                   ▲ reads only
+  scrape new posts → grade each post with a language model → write data/*.json
                                                                    │
-[this repo, on Vercel]  Next.js reads the table server-side and renders the list
+                                                                   ▼ scripts/deploy.mjs
+[this repo, on Vercel]  Next.js prerenders every page from data/ at build time
 ```
 
 - **Collect.** On a schedule, the pipeline reads the newest posts from about 19 hiring subreddits. Posts tagged `[For Hire]` or `[Offer]` are skipped.
 - **Grade.** A language model decides whether each post is hiring, writes a summary, extracts pay, skills and location, and gives it a scam score from 0 to 1.
-- **Publish.** Only hiring posts are written to the database. Of each post's body, only the opening lines (about 320 characters) are stored; the site shows its own summary and links to Reddit for the rest. Jobs whose Reddit post was deleted or removed are taken off the board.
+- **Publish.** Only hiring posts are written to `data/jobs.json`. Of each post's body, only the opening lines (about 320 characters) are stored; the site shows its own summary and links to Reddit for the rest. Jobs whose Reddit post was deleted or removed are taken off the board.
 
-**The scraper and grader are not part of this repository.** A separate, private pipeline collects and grades posts on a schedule and writes them to the database. This repo is only the website, and it only ever reads from the database.
+**The scraper and grader are not part of this repository.** A separate, private pipeline collects and grades posts on a schedule, writes the jobs to `data/` and deploys the site. This repo is only the website. The data isn't in it either: posts and usernames removed from Reddit would stay in its Git history.
 
 ### Product rules
 
@@ -33,8 +30,8 @@ About three in four posts on subreddits like r/forhire, r/slavelabour or r/Desig
 | Jobs older than this move to a collapsed "older posts" section | 14 days | `src/lib/site.ts` |
 | Jobs at or above this scam score are hidden by default | 0.6 | `src/lib/site.ts` |
 | Jobs at or above this scam score show a warning | 0.4 | `src/lib/site.ts` |
-| Lists, counts and stats refresh | after every sync (`refresh.sh`), else daily | `src/lib/db.ts` (`cacheLife`) |
-| A job's page refreshes | when a sync adds, changes or removes it, when it expires, else monthly | `src/lib/db.ts` (`getJob`) |
+| Jobs, counts and stats change | with every deploy | `scripts/deploy.mjs` |
+| What counts as expired is rechecked without a deploy | daily for lists; when it expires for a job's page | `src/lib/data.ts` (`cacheLife`) |
 
 Filtering, search and sorting run in the browser, since the dataset is small. Filters are kept in the URL, so filtered views can be shared. "Applied" marks are stored in the visitor's `localStorage`, or in their account if they sign in. Accounts are optional (email and password, or Google, via [better-auth](https://www.better-auth.com)); signing in merges the browser's marks into the account. A signed-out visitor who marks a job or opens a post on Reddit is offered an account once, then not again for 14 days after dismissing it.
 
@@ -44,13 +41,13 @@ Requirements: Node 20+ and npm.
 
 ```bash
 npm install
-cp .env.example .env.local   # then set WEB_DATABASE_URL (and optionally REMOVAL_EMAIL)
+cp .env.example .env.local   # then set what you need (all optional, except DATABASE_URL and BETTER_AUTH_SECRET for accounts)
 npm run dev
 ```
 
-`WEB_DATABASE_URL` is a Postgres connection string for a role that can only `SELECT` from the `jobs` table.
+The jobs come from `data/jobs.json` and `data/subreddit-stats.json`, which the pipeline writes (the fields are in `JobRow` in `src/lib/jobs.ts` and `parseStatsRow` in `src/lib/subreddits.ts`). Without them the site still builds and renders a "the job list didn't load" state, except on Vercel, where the build fails rather than publish a site without jobs.
 
-`DATABASE_URL` is a second, separate Postgres database for accounts and their applied marks; create its tables with `db/schema.sql`. `BETTER_AUTH_SECRET` signs session cookies (`openssl rand -base64 32`).
+`DATABASE_URL` is a Postgres database for accounts and their applied marks, the only thing that uses a database; create its tables with `db/schema.sql`. `BETTER_AUTH_SECRET` signs session cookies (`openssl rand -base64 32`).
 
 `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are optional and turn on "Continue with Google". They come from an OAuth client of type "Web application" in Google Cloud Console, with `https://<your domain>/api/auth/callback/google` as an authorized redirect URI (add `http://localhost:3000/...` for local use). The button is shown only when both are set at build time.
 
@@ -59,8 +56,6 @@ npm run dev
 `RESEND_API_KEY` is optional: it emails each message from the header's Feedback dialog to `REMOVAL_EMAIL`, sent from `feedback@hassandev.me` (a domain verified in Resend). Messages are also stored in the accounts database's `feedback` table, so a failed email loses nothing (`emailed` stays false). Each IP can send 5 an hour.
 
 On Vercel, set these in the project's environment variables for Production and Preview.
-
-Without a reachable database the site still builds and renders a "the job list didn't load" state, then retries every minute.
 
 Other scripts: `npm run build`, `npm run start`, `npm run lint`.
 
@@ -82,8 +77,8 @@ src/
     JobItem.tsx           one job in the list
     JobDetail.tsx         the detail view
   lib/
-    db.ts                 the only database code (server-only, cached)
-    jobs.ts               row type, defensive parsing, expiry and scam rules
+    data.ts               reads the job data from data/*.json (server-only)
+    jobs.ts               job type, defensive parsing, expiry and scam rules
     labels.ts             human labels for enum-like columns
     format.ts             pay, date and time formatting
     applied.ts            the "applied" store: localStorage, or the account when signed in
@@ -94,7 +89,13 @@ src/
 
 This app uses Next.js 16 with Cache Components enabled (`cacheComponents: true`), so caching is done with `"use cache"` and `cacheLife` rather than `export const revalidate`.
 
-After each sync the pipeline runs `refresh.sh`, which sends `/api/revalidate` the jobs the sync added, changed or removed (from the pipeline's `last_sync.json`). Only those job pages are rebuilt: every rebuild writes the page, its prefetch segments and its image to Vercel's ISR cache, and the Hobby plan allows 200,000 writes a month. A deploy starts with a fresh cache anyway. Run `./refresh.sh --all` to rebuild every job page after changing jobs outside the pipeline, such as by hand in the database.
+### Deploying
+
+`npm run deploy` (`scripts/deploy.mjs`) deploys the committed `main` branch plus `data/` to production with the Vercel CLI. The pipeline runs it after every export, so uncommitted work is never deployed, and anything committed to `main` goes live with the next run. It then checks that the live site has the new data and announces new jobs to IndexNow. `.env.local` needs `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`.
+
+A Git push doesn't deploy: Git has no data, so a Git-triggered build fails.
+
+Every page is prerendered, so no visit to a job, list or guide reads a database. Jobs older than the list window (60 days) render on first request from the same files, and stay cached until the next deploy.
 
 ## Design direction
 

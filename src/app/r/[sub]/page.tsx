@@ -6,7 +6,7 @@ import { ProseSection } from "@/components/ProseSection";
 import { JobRow, StatTile as Tile } from "@/components/JobRow";
 import { ExactTime } from "@/components/RelativeTime";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getJobs, getSubredditStats } from "@/lib/db";
+import { getJobs, getSubredditStats } from "@/lib/data";
 import { countLabel, workModeText } from "@/lib/format";
 import { JsonLd, subredditGraph } from "@/lib/jsonld";
 import { EMPLOYMENT_LABELS, labelFor, ROLE_LABELS } from "@/lib/labels";

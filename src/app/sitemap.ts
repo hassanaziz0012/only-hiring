@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { CATEGORIES, categoryLive, isCategoryIndexable } from "@/lib/categories";
-import { getJobs, getSiteStats, getSubredditStats } from "@/lib/db";
+import { getJobs, getSiteStats, getSubredditStats } from "@/lib/data";
 import { isIndexable } from "@/lib/jobs";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { siteUrl } from "@/lib/site";
@@ -25,7 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     : [];
 
   return [
-    // The homepage changes when a new job is listed, not on every sync.
+    // The homepage changes when a new job is listed, not on every deploy.
     { url: url("/"), lastModified: listed[0]?.postedAt ?? undefined },
     { url: url("/about") },
     { url: url("/privacy") },

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ProseSection as Section } from "@/components/ProseSection";
 import { SiteHeader } from "@/components/SiteHeader";
 import { DataError } from "@/components/DataError";
-import { getJobs, getSubredditStats } from "@/lib/db";
+import { getJobs, getSubredditStats } from "@/lib/data";
 import { hasScamWarning, isExpired, isLikelyScam } from "@/lib/jobs";
 import { guideGraph, JsonLd } from "@/lib/jsonld";
 import { SCAM_GUIDE_PATH, SCAM_GUIDE_PUBLISHED, scamReport } from "@/lib/scam-report";

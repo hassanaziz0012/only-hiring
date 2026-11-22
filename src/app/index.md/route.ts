@@ -1,4 +1,4 @@
-import { getJobs } from "@/lib/db";
+import { getJobs } from "@/lib/data";
 import { countLabel, dayKey, exactDate, formatPay, locationText, workModeText } from "@/lib/format";
 import { isExpired, isIndexable, isLikelyScam, scamWarningLabel } from "@/lib/jobs";
 import { EMPLOYMENT_LABELS, labelFor } from "@/lib/labels";
@@ -8,7 +8,7 @@ import { SUBREDDITS, subredditLive, subredditPath } from "@/lib/subreddits";
 
 // The homepage as Markdown, for AI agents: served at / when Accept prefers text/markdown (see src/proxy.ts),
 // and here directly. The HTML homepage lists every open job, which runs past what an agent can read, so this
-// lists the newest few and points to the subreddit pages for the rest. Built from the cached job list like the feed.
+// lists the newest few and points to the subreddit pages for the rest. Prerendered like the feed.
 
 const MAX_SKILLS = 6;
 

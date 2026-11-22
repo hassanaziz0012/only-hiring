@@ -1,17 +1,17 @@
 // The job row type, defensive parsing, and the expiry and scam rules.
-// Safe to import from client components: no database access here.
+// Safe to import from client components: it never reads the data files.
 
 import { EXPIRY_DAYS, SCAM_HIDE_THRESHOLD, SCAM_WARN_THRESHOLD } from "./site";
 
-/** A row of the `jobs` table as returned by the driver, before parsing. Mirrors db/schema.sql in the pipeline repo. */
+/** A job in data/jobs.json, before parsing. Mirrors COLUMNS in the pipeline repo's export_site_data.py. */
 export type JobRow = {
   id: unknown;
   subreddit: unknown;
   reddit_url: unknown;
   reddit_title: unknown;
-  author?: unknown;
+  author: unknown;
   flair: unknown;
-  body_excerpt?: unknown;
+  body_excerpt: unknown;
   posted_at: unknown;
   job_title: unknown;
   summary: unknown;
@@ -29,13 +29,11 @@ export type JobRow = {
   remote_regions: unknown;
   language_requirements: unknown;
   test_task: unknown;
-  test_task_details?: unknown;
+  test_task_details: unknown;
   skills: unknown;
-  apply_method?: unknown;
+  apply_method: unknown;
   scam_score: unknown;
-  red_flags?: unknown;
-  /** Word count of body_excerpt, selected instead of the text itself by the list query. */
-  body_words?: unknown;
+  red_flags: unknown;
 };
 
 export const LANGUAGE_LEVELS = ["native", "fluent", "good", "basic"] as const;
@@ -88,38 +86,6 @@ export type Job = {
   scamScore: number | null;
   redFlags: string[];
 };
-
-export const JOB_COLUMNS = [
-  "id",
-  "subreddit",
-  "reddit_url",
-  "reddit_title",
-  "author",
-  "flair",
-  "body_excerpt",
-  "posted_at",
-  "job_title",
-  "summary",
-  "role_category",
-  "seniority",
-  "employment_type",
-  "pay_type",
-  "pay_min",
-  "pay_max",
-  "pay_currency",
-  "pay_raw",
-  "work_mode",
-  "location",
-  "remote_scope",
-  "remote_regions",
-  "language_requirements",
-  "test_task",
-  "test_task_details",
-  "skills",
-  "apply_method",
-  "scam_score",
-  "red_flags",
-] as const;
 
 function text(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -195,7 +161,7 @@ export function parseJobRow(row: JobRow): Job | null {
     author: text(row.author),
     flair: text(row.flair),
     bodyExcerpt,
-    bodyWords: num(row.body_words) ?? wordCount(bodyExcerpt),
+    bodyWords: wordCount(bodyExcerpt),
     postedAt: isoDate(row.posted_at),
     jobTitle: text(row.job_title) ?? redditTitle,
     summary: text(row.summary) ?? "",

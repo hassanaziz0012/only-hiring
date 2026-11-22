@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getJob, getJobs } from "@/lib/db";
+import { getJob, getJobs } from "@/lib/data";
 import { formatPay } from "@/lib/format";
 import { scamWarningLabel } from "@/lib/jobs";
 import { labelFor, WORK_MODE_LABELS } from "@/lib/labels";
@@ -9,7 +9,7 @@ export const alt = "The job's title, pay and subreddit";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
-// Built with the job pages. Jobs added after a deploy render on first request, and the CDN keeps them.
+// Built with the job pages. Jobs older than the list window render on first request, and the CDN keeps them.
 export async function generateStaticParams() {
   const result = await getJobs();
   if (!result.ok || result.jobs.length === 0) return [{ id: "_" }];

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getJobs } from "@/lib/db";
+import { getJobs } from "@/lib/data";
 import { countLabel } from "@/lib/format";
 import { SCAM_GUIDE_PATH } from "@/lib/scam-report";
 import { BEST_SUBS_PATH, subredditPath, subredditProfile } from "@/lib/subreddits";

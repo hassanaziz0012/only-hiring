@@ -1,10 +1,9 @@
 import { toApiJob, type ApiJobList } from "@/lib/api";
-import { getJobs } from "@/lib/db";
+import { getJobs } from "@/lib/data";
 import { siteUrl } from "@/lib/site";
 
-// Every job in the list window as JSON, for agents and the MCP server. Built from the cached job list like the
-// feed, so it's prerendered and served from the CDN until the next sync clears the tag: reading it never
-// touches the database, however often it's fetched. See the note above LIST_OMITTED in lib/db.ts.
+// Every job in the list window as JSON, for agents and the MCP server. Prerendered and served
+// from the CDN like the feed, so reading it never runs a function.
 
 export async function GET() {
   const result = await getJobs();

@@ -1,5 +1,5 @@
 import { toApiJobDetail } from "@/lib/api";
-import { getJob, getJobs } from "@/lib/db";
+import { getJob, getJobs } from "@/lib/data";
 import { siteUrl } from "@/lib/site";
 
 // One job as JSON, with the fields only its page shows (red flags, the post's opening lines, how to apply).

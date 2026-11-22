@@ -339,7 +339,7 @@ export function resultSummary(n: number): string {
  * figures the unfiltered board shows (counts, facet options), worked out from every job.
  *
  * The homepage used to render all of the list window's jobs, older ones included: 3 MB of HTML that every bot and
- * every prefetch of "/" downloaded, and that each sync wrote to the ISR cache again.
+ * every prefetch of "/" downloaded, and that each refresh wrote to the ISR cache again.
  */
 export type BoardPreview = {
   /** The newest open jobs, ending at the end of a day (UTC, as the server renders), so no day's count is cut short. */

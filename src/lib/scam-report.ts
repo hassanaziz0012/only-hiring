@@ -1,5 +1,5 @@
 // Figures behind the Reddit job scams guide (/guides/reddit-job-scams), built from the pipeline's
-// per-subreddit stats (see lib/subreddits.ts), so they update with every sync. Cumulative over every
+// per-subreddit stats (see lib/subreddits.ts), so they update with every deploy. Cumulative over every
 // post graded since collection started, reposts and crossposts counted once. Red flags are the
 // grader's free-text phrases, grouped by keyword in the pipeline's site_stats.py.
 
@@ -7,7 +7,7 @@ import { FLAG_KINDS, sumStats, type FlagKind, type SubredditStats } from "./subr
 
 export const SCAM_GUIDE_PATH = "/guides/reddit-job-scams";
 
-/** When the guide was first published. Its figures change with every sync. */
+/** When the guide was first published. Its figures change with every deploy. */
 export const SCAM_GUIDE_PUBLISHED = "2026-10-21";
 
 export const FLAG_KIND_LABELS: Record<FlagKind, string> = {

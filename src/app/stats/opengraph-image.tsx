@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getSiteStats } from "@/lib/db";
+import { getSiteStats } from "@/lib/data";
 import { OG_COLORS, OG_FONTS, OG_SIZE, OgWordmark } from "@/lib/og";
 import { num, pct } from "@/lib/stats";
 
