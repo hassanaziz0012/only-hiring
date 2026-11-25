@@ -60,6 +60,9 @@ export function MobileMenu({ links }: { links: MenuLink[] }) {
           if (e.target === e.currentTarget) close();
         }}
       >
+        {/* Rendered only while open: every page's HTML carried a hidden copy of it, and each page view that missed the
+            CDN cache was billed as an ISR read by size. */}
+        {open && (
         <div className="shell pb-4">
           {/* Mirrors the header's row, so the menu reads as the header opening up. */}
           <div className="flex items-center justify-between gap-4 py-4">
@@ -110,6 +113,7 @@ export function MobileMenu({ links }: { links: MenuLink[] }) {
             </ul>
           </nav>
         </div>
+        )}
       </dialog>
     </>
   );
