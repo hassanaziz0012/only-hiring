@@ -8,6 +8,8 @@
   // node:crypto (better-auth's scrypt, the feedback IP hash) and the Neon driver need it.
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  // The production domain. Cloudflare creates and manages its DNS record.
+  "routes": [{ "pattern": "onlyhiring.hassandev.me", "custom_domain": true }],
   "preview_urls": false,
   "assets": {
     "directory": "./out",
