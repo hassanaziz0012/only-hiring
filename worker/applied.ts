@@ -1,5 +1,5 @@
-import type { Pool } from "@neondatabase/serverless";
 import { sessionUserId } from "./auth";
+import type { Db } from "./db";
 import type { Env } from "./env";
 
 // /api/applied: the signed-in user's "applied" marks. Anonymous visitors keep theirs in localStorage instead.
@@ -14,7 +14,7 @@ function idList(value: unknown): string[] | null {
   return [...new Set(value as string[])];
 }
 
-async function appliedIds(db: Pool, userId: string): Promise<string[]> {
+async function appliedIds(db: Db, userId: string): Promise<string[]> {
   const { rows } = await db.query<{ job_id: string }>(
     "SELECT job_id FROM applied_job WHERE user_id = $1 ORDER BY applied_at DESC",
     [userId],
@@ -23,11 +23,11 @@ async function appliedIds(db: Pool, userId: string): Promise<string[]> {
 }
 
 /** GET: the list. POST, body { add?: string[], remove?: string[] }: responds with the full list afterwards. */
-export async function applied(request: Request, env: Env, db: Pool): Promise<Response> {
+export async function applied(request: Request, env: Env, db: Db): Promise<Response> {
   if (request.method !== "GET" && request.method !== "POST") {
     return new Response(null, { status: 405, headers: { Allow: "GET, POST" } });
   }
-  const userId = await sessionUserId(env, db, request.headers);
+  const userId = await sessionUserId(env, request.headers);
   if (!userId) return Response.json({ error: "Not signed in" }, { status: 401 });
   if (request.method === "GET") return Response.json({ ids: await appliedIds(db, userId) }, { headers: PRIVATE });
 

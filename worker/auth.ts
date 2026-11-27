@@ -1,5 +1,5 @@
-import { Pool } from "@neondatabase/serverless";
 import { betterAuth } from "better-auth";
+import { NeonHttpDialect } from "./db";
 import type { Env } from "./env";
 
 // Optional accounts, so "applied" marks survive cleared browser data and follow the visitor
@@ -11,12 +11,8 @@ import type { Env } from "./env";
 // one with the same email (error=account_not_linked). Otherwise anyone could pre-register
 // someone's address with a password and keep access once its owner signs in with Google.
 //
-// Workers can't carry a database connection from one request to the next, so each request gets its own pool,
-// and an auth instance around it (about 2 ms of CPU). The caller closes the pool when the response is sent.
-
-export function accountsDb(env: Env): Pool {
-  return new Pool({ connectionString: env.DATABASE_URL });
-}
+// The database is reached over Neon's HTTP API (worker/db.ts), which holds no connection, so one instance
+// serves every request a Worker instance gets.
 
 function allowedHosts(env: Env): string[] {
   const extra = (env.EXTRA_HOSTS ?? "").split(",").map((h) => h.trim());
@@ -25,9 +21,10 @@ function allowedHosts(env: Env): string[] {
 
 export const googleEnabled = (env: Env) => Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 
-export function createAuth(env: Env, db: Pool) {
+function createAuth(env: Env) {
   return betterAuth({
-    database: db,
+    // No transactions over HTTP. better-auth only needs them on MySQL.
+    database: { dialect: new NeonHttpDialect(env.DATABASE_URL), type: "postgres", transaction: false },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: { allowedHosts: allowedHosts(env), fallback: new URL(env.SITE_URL).origin },
     emailAndPassword: {
@@ -51,8 +48,9 @@ export function createAuth(env: Env, db: Pool) {
       updateAge: 60 * 60 * 24,
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
-    // Worker instances don't share memory, so count attempts in the database.
-    rateLimit: { enabled: true, storage: "database" },
+    // Worker instances don't share memory, so count attempts in the database. Not for reading the session, which
+    // every signed-in page view does and which can't be abused: that would add two queries to each.
+    rateLimit: { enabled: true, storage: "database", customRules: { "/get-session": false } },
     advanced: {
       // On by default, and it inspects the whole schema when the instance is created, which would wake the Neon
       // compute on every request. After changing the options above, compare the tables with db/schema.sql by hand.
@@ -63,8 +61,15 @@ export function createAuth(env: Env, db: Pool) {
   });
 }
 
+let instance: ReturnType<typeof createAuth> | null = null;
+
+/** The auth instance for this Worker's bindings, which don't change while it runs. */
+export function auth(env: Env) {
+  return (instance ??= createAuth(env));
+}
+
 /** The signed-in user's id for this request, or null. */
-export async function sessionUserId(env: Env, db: Pool, headers: Headers): Promise<string | null> {
-  const session = await createAuth(env, db).api.getSession({ headers });
+export async function sessionUserId(env: Env, headers: Headers): Promise<string | null> {
+  const session = await auth(env).api.getSession({ headers });
   return session?.user.id ?? null;
 }

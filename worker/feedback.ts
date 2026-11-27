@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { Pool } from "@neondatabase/serverless";
 import { SITE_NAME } from "@/lib/site";
+import type { Db } from "./db";
 import type { Env } from "./env";
 
 // /api/feedback: anonymous feedback from the header's Feedback dialog. Each message is stored in the accounts
@@ -43,7 +43,7 @@ async function sendEmail(env: Env, message: string, replyEmail: string | null, p
 }
 
 /** POST, body { message: string, email?: string, page?: string, website?: string (honeypot) }. */
-export async function feedback(request: Request, env: Env, db: Pool): Promise<Response> {
+export async function feedback(request: Request, env: Env, db: Db): Promise<Response> {
   if (request.method !== "POST") return new Response(null, { status: 405, headers: { Allow: "POST" } });
   let body: { message?: unknown; email?: unknown; page?: unknown; website?: unknown };
   try {

@@ -14,7 +14,7 @@ About three in four posts on subreddits like r/forhire, r/slavelabour or r/Desig
   scrape new posts → grade each post with a language model → write data/*.json
                                                                    │
                                                                    ▼ scripts/deploy.mjs
-[this repo, on Vercel]  Next.js prerenders every page from data/ at build time
+[this repo, on Cloudflare]  Next.js builds every page from data/ as static files; a small Worker does the rest
 ```
 
 - **Collect.** On a schedule, the pipeline reads the newest posts from about 19 hiring subreddits. Posts tagged `[For Hire]` or `[Offer]` are skipped.
@@ -30,8 +30,7 @@ About three in four posts on subreddits like r/forhire, r/slavelabour or r/Desig
 | Jobs older than this move to a collapsed "older posts" section | 14 days | `src/lib/site.ts` |
 | Jobs at or above this scam score are hidden by default | 0.6 | `src/lib/site.ts` |
 | Jobs at or above this scam score show a warning | 0.4 | `src/lib/site.ts` |
-| Jobs, counts and stats change | with every deploy | `scripts/deploy.mjs` |
-| What counts as expired is rechecked without a deploy | daily for lists; when it expires for a job's page | `src/lib/data.ts` (`cacheLife`) |
+| Jobs, counts, stats and what counts as expired change | with every deploy | `scripts/deploy.mjs` |
 
 Filtering, search and sorting run in the browser, since the dataset is small. Filters are kept in the URL, so filtered views can be shared. "Applied" marks are stored in the visitor's `localStorage`, or in their account if they sign in. Accounts are optional (email and password, or Google, via [better-auth](https://www.better-auth.com)); signing in merges the browser's marks into the account. A signed-out visitor who marks a job or opens a post on Reddit is offered an account once, then not again for 14 days after dismissing it.
 
@@ -45,19 +44,21 @@ cp .env.example .env.local   # then set what you need (all optional, except DATA
 npm run dev
 ```
 
-The jobs come from `data/jobs.json` and `data/subreddit-stats.json`, which the pipeline writes (the fields are in `JobRow` in `src/lib/jobs.ts` and `parseStatsRow` in `src/lib/subreddits.ts`). Without them the site still builds and renders a "the job list didn't load" state, except on Vercel, where the build fails rather than publish a site without jobs.
+The jobs come from `data/jobs.json` and `data/subreddit-stats.json`, which the pipeline writes (the fields are in `JobRow` in `src/lib/jobs.ts` and `parseStatsRow` in `src/lib/subreddits.ts`). Without them `npm run dev` renders a "the job list didn't load" state, and `npm run build` fails rather than publish a site without jobs.
+
+`npm run dev` serves the pages. The routes that need a server (sign-in, applied marks, feedback, `/mcp`, filtered feeds, `/api/jobs/<id>`) are in the Worker: run `npm run build` once, then `npm run dev:worker` alongside, and `next dev` hands those routes to it. The Worker reads its settings from `.dev.vars` (the same keys as below, plus `EXTRA_HOSTS="localhost:*"`). `npm run preview` builds the site and serves all of it from the Worker, as Cloudflare would.
 
 `DATABASE_URL` is a Postgres database for accounts and their applied marks, the only thing that uses a database; create its tables with `db/schema.sql`. `BETTER_AUTH_SECRET` signs session cookies (`openssl rand -base64 32`).
 
 `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are optional and turn on "Continue with Google". They come from an OAuth client of type "Web application" in Google Cloud Console, with `https://<your domain>/api/auth/callback/google` as an authorized redirect URI (add `http://localhost:3000/...` for local use). The button is shown only when both are set at build time.
 
-`REMOVAL_EMAIL` is optional config: the address shown for removal requests in the footer and on the About page. It is read on the server at build time. If it's unset, the site links to this repo's issue tracker instead.
+`REMOVAL_EMAIL` is optional config: the address shown for removal requests in the footer and on the About page, read at build time, and where the Worker emails feedback. If it's unset, the site links to this repo's issue tracker instead.
 
 `RESEND_API_KEY` is optional: it emails each message from the header's Feedback dialog to `REMOVAL_EMAIL`, sent from `feedback@hassandev.me` (a domain verified in Resend). Messages are also stored in the accounts database's `feedback` table, so a failed email loses nothing (`emailed` stays false). Each IP can send 5 an hour.
 
-On Vercel, set these in the project's environment variables for Production and Preview.
+In production the Worker reads these as secrets (see [Hosting on Cloudflare](#hosting-on-cloudflare)), and the build reads `REMOVAL_EMAIL` and the Google pair from `.env.local`.
 
-Other scripts: `npm run build`, `npm run start`, `npm run lint`.
+Other scripts: `npm run build`, `npm run lint`, `npm run typecheck`.
 
 `npm run dev` and `npm run build` first run `scripts/fetch-fonts.mjs`, which downloads the Pilcrow Rounded font files from Fontshare into `src/app/fonts/`. That folder is gitignored on purpose; see [License](#license).
 
@@ -72,7 +73,7 @@ src/
     robots.ts, sitemap.ts, opengraph-image.tsx, icon.svg
   components/
     account/              sign-in dialog, header link, session sync
-    FeedbackNav.tsx       header Feedback link and dialog (posts to app/api/feedback)
+    FeedbackNav.tsx       header Feedback link and dialog (posts to /api/feedback, in the Worker)
     board/                client-side filters, search, sorting, grouping
     JobItem.tsx           one job in the list
     JobDetail.tsx         the detail view
@@ -82,20 +83,51 @@ src/
     labels.ts             human labels for enum-like columns
     format.ts             pay, date and time formatting
     applied.ts            the "applied" store: localStorage, or the account when signed in
-    auth.ts               better-auth config and the accounts database (server-only)
-    google-sign-in.ts     whether Google sign-in is set up, kept out of auth.ts so pages don't load it
+    google-sign-in.ts     whether Google sign-in is set up, read at build time
     site.ts               site name, thresholds, removal contact
+worker/
+  index.ts                the Cloudflare Worker: routes the few requests that aren't static files
+  auth.ts                 better-auth config
+  db.ts                   the accounts database over Neon's HTTP API
+  applied.ts, feedback.ts, mcp.ts, feed.ts
+scripts/
+  cloudflare-assets.mjs   after the build: writes out/_headers, trims out/ to fit the free plan
+  deploy.mjs              builds and deploys to Cloudflare
 ```
 
-This app uses Next.js 16 with Cache Components enabled (`cacheComponents: true`), so caching is done with `"use cache"` and `cacheLife` rather than `export const revalidate`.
+The site is a static export (`output: "export"` in `next.config.ts`): `next build` writes every page to `out/`, and nothing renders per request. A static export ignores `headers()`, `redirects()` and `rewrites()`, so `out/_headers` comes from `scripts/cloudflare-assets.mjs` and `out/_redirects` from `src/app/%5Fredirects`.
 
 ### Deploying
 
-`npm run deploy` (`scripts/deploy.mjs`) deploys the committed `main` branch plus `data/` to production with the Vercel CLI. The pipeline runs it after every export, so uncommitted work is never deployed, and anything committed to `main` goes live with the next run. It then checks that the live site has the new data and announces new jobs to IndexNow. `.env.local` needs `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`.
+`npm run deploy` (`scripts/deploy.mjs`) builds the committed `main` branch plus `data/` in a temporary folder and deploys it to Cloudflare with wrangler. The pipeline runs it after every export, so uncommitted work is never deployed, and anything committed to `main` goes live with the next run. It then checks that the live site has the new data and announces new jobs to IndexNow. Wrangler must be signed in (`npx wrangler login`) or `CLOUDFLARE_API_TOKEN` set.
 
-A Git push doesn't deploy: Git has no data, so a Git-triggered build fails.
+`npm run deploy -- --test --ref <branch>` deploys a branch to https://onlyhiring.hassanaziz0012.workers.dev instead, with `X-Robots-Tag: noindex` and no IndexNow. While the custom domain isn't on the Worker, that's the only address it has; once it is, a test deploy replaces production.
 
-Every page is prerendered, so no visit to a job, list or guide reads a database. Jobs older than the list window (60 days) render on first request from the same files, and stay cached until the next deploy.
+A Git push doesn't deploy: Git has no data.
+
+### Hosting on Cloudflare
+
+Everything is a static file except what's listed in `run_worker_first` in `wrangler.jsonc`. Cloudflare serves static files without running the Worker, so they cost nothing, use no CPU and count toward no request limit.
+
+| Path | Served by | CPU per request |
+| --- | --- | --- |
+| Pages, Open Graph images, `/feed.xml` without filters, `/api/jobs`, `/api/board`, sitemap, `llms.txt`, 404s | static files | none |
+| `/api/jobs/<id>` | Worker, from one of 64 shard files | about 1 ms |
+| `/feed.xml?…` with filters, `/mcp` | Worker, from the static JSON | 4–7 ms; 15–25 ms on a cold instance |
+| `/api/auth/get-session`, `/api/applied` | Worker, Neon over HTTP | 2–4 ms; 15–30 ms on a cold instance |
+| Email sign-up, sign-in, account deletion | Worker | 100–280 ms (scrypt password hashing) |
+
+The free plan's limits that matter, and how the site stays inside them:
+
+- **100,000 Worker requests a day.** Only the rows above that run the Worker count. Browsers only fetch the session if they were signed in.
+- **10 ms of CPU per request.** Cloudflare lets occasional requests run over. The password routes always do, by design of the hash; if they start failing with error 1102, the Workers Paid plan ($5/month) raises the limit to 30 s.
+- **20,000 files per deploy.** Each job costs two files (its page and its Open Graph image): job links are plain `<a>` links, so `scripts/cloudflare-assets.mjs` deletes the job pages' client-navigation files, and `/api/jobs/<id>` comes from 64 shard files. About 3,000 files in November 2026, plus about 70 a day. The script warns at 17,000 and fails above 20,000. Before that, stop building Open Graph images for jobs older than the list window, or drop old jobs.
+
+The Worker runs in AWS us-east-1 (`placement` in `wrangler.jsonc`), next to the Neon database, since a sign-in makes several queries in a row.
+
+**Secrets**, set once with `npx wrangler secret put <NAME>` (or `wrangler secret bulk`): `DATABASE_URL`, `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `REMOVAL_EMAIL`, `RESEND_API_KEY`. The build-time settings are in `.env.local`: `REMOVAL_EMAIL`, the Google pair, and `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` for Cloudflare Web Analytics.
+
+**Markdown for agents.** `/index.md` is the homepage as Markdown. A static site can't pick it for `Accept: text/markdown` at `/`, but a Cloudflare URL rewrite rule on the domain can: rewrite the path `/` to `/index.md` when `any(http.request.headers["accept"][*] contains "text/markdown")`.
 
 ## Design direction
 

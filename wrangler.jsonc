@@ -23,5 +23,9 @@
     "EXTRA_HOSTS": "onlyhiring.hassanaziz0012.workers.dev",
     "NOINDEX": "0",
   },
+  // Run the Worker next to the accounts database (Neon, AWS us-east-1) rather than next to the visitor: sign-in
+  // makes several queries in a row, and each one crossed an ocean from a far-away edge. Static files aren't
+  // affected; they're still served from the edge closest to the visitor.
+  "placement": { "region": "aws:us-east-1" },
   "observability": { "enabled": true },
 }

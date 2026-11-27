@@ -1,8 +1,8 @@
-import type { Pool } from "@neondatabase/serverless";
 import { jobShard, jobShardPath, type ApiJobShard } from "@/lib/api";
 import { applied } from "./applied";
 import { assetJson } from "./assets";
-import { accountsDb, createAuth } from "./auth";
+import { auth } from "./auth";
+import { accountsDb } from "./db";
 import type { Env } from "./env";
 import { feed } from "./feed";
 import { feedback } from "./feedback";
@@ -36,12 +36,12 @@ async function jobDetail(env: Env, id: string): Promise<Response> {
   return Response.json(job, { headers: { ...CORS, "Cache-Control": "public, max-age=300" } });
 }
 
-async function route(request: Request, env: Env, db: () => Pool): Promise<Response> {
+async function route(request: Request, env: Env): Promise<Response> {
   const { pathname } = new URL(request.url);
 
-  if (pathname.startsWith("/api/auth/")) return createAuth(env, db()).handler(request);
-  if (pathname === "/api/applied") return applied(request, env, db());
-  if (pathname === "/api/feedback") return feedback(request, env, db());
+  if (pathname.startsWith("/api/auth/")) return auth(env).handler(request);
+  if (pathname === "/api/applied") return applied(request, env, accountsDb(env.DATABASE_URL));
+  if (pathname === "/api/feedback") return feedback(request, env, accountsDb(env.DATABASE_URL));
   if (pathname === "/mcp") return mcp(request, env);
   if (pathname === "/feed.xml") return feed(request, env);
   if (pathname.startsWith("/api/jobs/")) return jobDetail(env, decodeURIComponent(pathname.slice("/api/jobs/".length)));
@@ -49,19 +49,14 @@ async function route(request: Request, env: Env, db: () => Pool): Promise<Respon
 }
 
 export default {
-  async fetch(request, env, ctx): Promise<Response> {
-    // One database pool per request (see worker/auth.ts), opened on first use and closed once the handler is done.
-    const opened: { pool?: Pool } = {};
-    const db = () => (opened.pool ??= accountsDb(env));
-
+  async fetch(request, env): Promise<Response> {
     let response: Response;
     try {
-      response = await route(request, env, db);
+      response = await route(request, env);
     } catch (error) {
       console.error("[worker]", new URL(request.url).pathname, error);
       response = Response.json({ error: "Something went wrong. Try again in a minute." }, { status: 500 });
     }
-    if (opened.pool) ctx.waitUntil(opened.pool.end().catch(() => {}));
 
     const headers = new Headers(response.headers);
     for (const [key, value] of Object.entries(SECURITY_HEADERS)) if (!headers.has(key)) headers.set(key, value);
