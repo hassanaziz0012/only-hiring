@@ -18,7 +18,7 @@
     "not_found_handling": "404-page",
     // Static files are served without running the Worker, which costs no CPU and counts toward no request limit.
     // Only these paths run it first. Keep them in step with route() in worker/index.ts.
-    "run_worker_first": ["/api/auth/*", "/api/applied", "/api/feedback", "/api/jobs/*", "/mcp", "/feed.xml"],
+    "run_worker_first": ["/api/auth/*", "/api/applied", "/api/feedback", "/api/jobs/*", "/mcp", "/feed.xml", "/_agents/home"],
   },
   "vars": {
     "SITE_URL": "https://onlyhiring.hassandev.me",

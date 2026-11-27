@@ -7,6 +7,9 @@ import type { Env } from "./env";
 import { feed } from "./feed";
 import { feedback } from "./feedback";
 import { mcp } from "./mcp";
+import { reportError } from "./sentry";
+import { agentHome, AGENT_HOME_PATH, markdownNotFound } from "./markdown";
+import { prefersMarkdown } from "@/lib/markdown";
 
 // The site's only server code. Everything else is a static file from the Next.js export (out/), served by
 // Cloudflare without running this Worker at all, which costs nothing and counts toward no limit.
@@ -45,16 +48,25 @@ async function route(request: Request, env: Env): Promise<Response> {
   if (pathname === "/mcp") return mcp(request, env);
   if (pathname === "/feed.xml") return feed(request, env);
   if (pathname.startsWith("/api/jobs/")) return jobDetail(env, decodeURIComponent(pathname.slice("/api/jobs/".length)));
-  return env.ASSETS.fetch(request);
+  if (pathname === AGENT_HOME_PATH) return agentHome(request, env);
+  const response = await env.ASSETS.fetch(request);
+  // No file matched: agents that prefer Markdown get a Markdown 404 instead of the HTML one.
+  if (response.status === 404 && prefersMarkdown(request.headers.get("accept"))) return markdownNotFound(env);
+  return response;
 }
 
 export default {
-  async fetch(request, env): Promise<Response> {
+  async fetch(request, env, ctx): Promise<Response> {
     let response: Response;
     try {
       response = await route(request, env);
+      if (response.status >= 500) {
+        const body = await response.clone().text().catch(() => "");
+        reportError(env, ctx, request, body, response.status);
+      }
     } catch (error) {
       console.error("[worker]", new URL(request.url).pathname, error);
+      reportError(env, ctx, request, error);
       response = Response.json({ error: "Something went wrong. Try again in a minute." }, { status: 500 });
     }
 

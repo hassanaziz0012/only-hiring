@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { AccountLayer } from "@/components/account/AccountLayer";
+import { ErrorReporting } from "@/components/ErrorReporting";
 import { FeedbackDialog } from "@/components/FeedbackNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { googleSignInEnabled } from "@/lib/google-sign-in";
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en-GB" className={pilcrow.variable}>
       <body className="flex min-h-svh flex-col">
+        <ErrorReporting />
         <a
           href="#main"
           className="sr-only-focusable fixed top-2 left-2 z-50 bg-accent px-4 py-2 font-bold text-accent-ink"

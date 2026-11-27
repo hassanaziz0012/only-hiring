@@ -17,7 +17,7 @@
 // Wrangler must be signed in (`npx wrangler login`), or CLOUDFLARE_API_TOKEN set. The Worker's secrets are set once
 // with `wrangler secret put` (README.md), not here. Build-time settings come from the environment or .env.local:
 // REMOVAL_EMAIL, GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET (whether to show the Google button) and
-// NEXT_PUBLIC_CF_ANALYTICS_TOKEN (Cloudflare Web Analytics).
+// NEXT_PUBLIC_CF_ANALYTICS_TOKEN (Cloudflare Web Analytics) and NEXT_PUBLIC_SENTRY_DSN (browser error reports).
 
 import { execFileSync, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -139,7 +139,7 @@ function run(command, args, extraEnv = {}) {
 }
 
 const buildEnv = Object.fromEntries(
-  ["REMOVAL_EMAIL", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "NEXT_PUBLIC_CF_ANALYTICS_TOKEN", "NEXT_PUBLIC_SITE_URL"]
+  ["REMOVAL_EMAIL", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "NEXT_PUBLIC_CF_ANALYTICS_TOKEN", "NEXT_PUBLIC_SENTRY_DSN", "NEXT_PUBLIC_SITE_URL"]
     .filter((k) => process.env[k])
     .map((k) => [k, process.env[k]]),
 );

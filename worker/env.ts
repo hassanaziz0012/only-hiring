@@ -19,4 +19,6 @@ export interface Env {
   /** Feedback is emailed here through Resend. */
   REMOVAL_EMAIL?: string;
   RESEND_API_KEY?: string;
+  /** Errors and 5xx responses are reported here (worker/sentry.ts). Not secret, but kept out of the repo. */
+  SENTRY_DSN?: string;
 }
