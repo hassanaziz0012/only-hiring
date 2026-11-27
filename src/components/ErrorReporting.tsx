@@ -10,13 +10,16 @@ const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 /** Wraps fetch before any other script runs, so the first session request is covered too. */
 const FETCH_WATCH = `(() => {
   const f = window.fetch;
+  // The loader is async: until it has run, retry for up to 10 s.
+  const report = (message, context, tries = 0) =>
+    window.Sentry ? Sentry.captureMessage(message, context) : tries < 20 && setTimeout(() => report(message, context, tries + 1), 500);
   window.fetch = async function (input, init) {
     const res = await f.apply(this, arguments);
     try {
       const url = new URL(input instanceof Request ? input.url : String(input), location.href);
       if (res.status >= 500 && url.origin === location.origin && /^\\/(api\\/|mcp)/.test(url.pathname)) {
         const method = (init && init.method) || (input instanceof Request ? input.method : "GET");
-        window.Sentry && Sentry.captureMessage(method + " " + url.pathname + " answered " + res.status, {
+        report(method + " " + url.pathname + " answered " + res.status, {
           level: "error",
           tags: { path: url.pathname, status: String(res.status) },
         });
@@ -36,7 +39,7 @@ export function ErrorReporting() {
   }
   return (
     <>
-      <script src={`https://js.sentry-cdn.com/${key}.min.js`} crossOrigin="anonymous" />
+      <script async src={`https://js.sentry-cdn.com/${key}.min.js`} crossOrigin="anonymous" />
       <script dangerouslySetInnerHTML={{ __html: FETCH_WATCH }} />
     </>
   );

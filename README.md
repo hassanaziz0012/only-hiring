@@ -125,9 +125,11 @@ The free plan's limits that matter, and how the site stays inside them:
 
 The Worker runs in AWS us-east-1 (`placement` in `wrangler.jsonc`), next to the Neon database, since a sign-in makes several queries in a row.
 
-**Secrets**, set once with `npx wrangler secret put <NAME>` (or `wrangler secret bulk`): `DATABASE_URL`, `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `REMOVAL_EMAIL`, `RESEND_API_KEY`. The build-time settings are in `.env.local`: `REMOVAL_EMAIL`, the Google pair, and `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` for Cloudflare Web Analytics.
+**Secrets**, set once with `npx wrangler secret put <NAME>` (or `wrangler secret bulk`): `DATABASE_URL`, `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `REMOVAL_EMAIL`, `RESEND_API_KEY`, and optionally `SENTRY_DSN`. The build-time settings are in `.env.local`: `REMOVAL_EMAIL`, the Google pair, and `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` for Cloudflare Web Analytics, and `NEXT_PUBLIC_SENTRY_DSN` for browser error reports.
 
-**Markdown for agents.** `/index.md` is the homepage as Markdown. A static site can't pick it for `Accept: text/markdown` at `/`, but a Cloudflare URL rewrite rule on the domain can: rewrite the path `/` to `/index.md` when `any(http.request.headers["accept"][*] contains "text/markdown")`.
+**Markdown for agents.** `/index.md` is the homepage as Markdown. Agents that prefer Markdown get it at `/` too: a URL rewrite rule on the hassandev.me zone (Rules → Transform Rules) rewrites `/` to `/_agents/home` when `any(lower(http.request.headers["accept"][*])[*] contains "text/markdown")`, and the Worker there parses the Accept header properly (`worker/markdown.ts`). A response header rule sets `Vary: Accept` on `/`. Browsers never send text/markdown, so they get the static homepage without running the Worker. Requests that match no file get a Markdown 404 when the client prefers Markdown.
+
+**Error reporting.** Errors go to Sentry when its DSN is set: `npx wrangler secret put SENTRY_DSN` for the Worker, and `NEXT_PUBLIC_SENTRY_DSN` in `.env.local` for the browser (read at build time). The Worker sends thrown errors and 5xx responses with one background request, and runs no extra code on requests that succeed (`worker/sentry.ts`). A request killed for running past the CPU limit (error 1102) can't report itself, so the browser reports this site's `/api/` and `/mcp` responses that come back 5xx (`src/components/ErrorReporting.tsx`). Sentry's loader script downloads the SDK only when there is something to report. Workers Logs (dashboard → Workers → onlyhiring → Logs) also list those requests, with outcome `exceededCpu`.
 
 ## Design direction
 
