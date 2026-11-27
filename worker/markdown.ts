@@ -9,8 +9,8 @@ import type { Env } from "./env";
 // and answers with the Markdown copy or the HTML homepage. Browsers never send text/markdown, so they get the
 // static homepage straight from the edge. A response header rule adds Vary: Accept to that one.
 //
-// On 404s: the Worker already runs for requests no file matches (other than browser navigations), so agents that
-// prefer Markdown get a Markdown 404 there.
+// On 404s: requests no file matches reach the Worker (not_found_handling is "none" in wrangler.jsonc), so agents
+// that prefer Markdown get a Markdown 404 and everyone else the static 404 page.
 
 /** Where the zone's rewrite rule sends / when Accept names text/markdown. Listed in wrangler.jsonc's run_worker_first. */
 export const AGENT_HOME_PATH = "/_agents/home";
@@ -43,4 +43,10 @@ There is no page at this address. A job may have been removed or re-graded as no
 - [Sitemap](${url("/sitemap.xml")})
 `;
   return new Response(body, { status: 404, headers: MARKDOWN_HEADERS });
+}
+
+/** The static export's 404 page, with a 404 status. */
+export async function notFoundPage(env: Env): Promise<Response> {
+  const res = await asset(env, "/404.html");
+  return new Response(res.body, { status: 404, headers: { "Content-Type": "text/html; charset=utf-8", Vary: "Accept" } });
 }

@@ -15,7 +15,8 @@
     "directory": "./out",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
-    "not_found_handling": "404-page",
+    // "none" so unmatched paths reach the Worker, which serves the 404 page (Markdown to agents). worker/markdown.ts
+    "not_found_handling": "none",
     // Static files are served without running the Worker, which costs no CPU and counts toward no request limit.
     // Only these paths run it first. Keep them in step with route() in worker/index.ts.
     "run_worker_first": ["/api/auth/*", "/api/applied", "/api/feedback", "/api/jobs/*", "/mcp", "/feed.xml", "/_agents/home"],

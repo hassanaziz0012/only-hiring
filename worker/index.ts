@@ -8,15 +8,15 @@ import { feed } from "./feed";
 import { feedback } from "./feedback";
 import { mcp } from "./mcp";
 import { reportError } from "./sentry";
-import { agentHome, AGENT_HOME_PATH, markdownNotFound } from "./markdown";
+import { agentHome, AGENT_HOME_PATH, markdownNotFound, notFoundPage } from "./markdown";
 import { prefersMarkdown } from "@/lib/markdown";
 
 // The site's only server code. Everything else is a static file from the Next.js export (out/), served by
 // Cloudflare without running this Worker at all, which costs nothing and counts toward no limit.
 //
-// wrangler.jsonc's run_worker_first lists the paths that reach this Worker. Keep the two in step. Other requests
-// get here only when no file matches and they aren't a browser navigation (fetch() calls, bots); those are handed
-// back to the assets, which answer with the 404 page.
+// wrangler.jsonc's run_worker_first lists the paths that reach this Worker first. Keep the two in step. Other
+// requests get here only when no file matches; route() answers those with the 404 page (HTML, or Markdown for
+// agents).
 
 // The headers out/_headers gives the static files. Cloudflare doesn't apply that file to a Worker's responses.
 const SECURITY_HEADERS: Record<string, string> = {
@@ -50,9 +50,11 @@ async function route(request: Request, env: Env): Promise<Response> {
   if (pathname.startsWith("/api/jobs/")) return jobDetail(env, decodeURIComponent(pathname.slice("/api/jobs/".length)));
   if (pathname === AGENT_HOME_PATH) return agentHome(request, env);
   const response = await env.ASSETS.fetch(request);
-  // No file matched: agents that prefer Markdown get a Markdown 404 instead of the HTML one.
-  if (response.status === 404 && prefersMarkdown(request.headers.get("accept"))) return markdownNotFound(env);
-  return response;
+  if (response.status !== 404) return response;
+  // No file matched (not_found_handling is "none", so the 404 page is ours to serve): agents that prefer
+  // Markdown get a Markdown 404, everyone else the HTML one.
+  if (prefersMarkdown(request.headers.get("accept"))) return markdownNotFound(env);
+  return notFoundPage(env);
 }
 
 export default {
