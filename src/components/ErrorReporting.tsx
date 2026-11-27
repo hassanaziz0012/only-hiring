@@ -31,15 +31,18 @@ const FETCH_WATCH = `(() => {
 
 export function ErrorReporting() {
   if (!DSN) return null;
-  let key: string;
+  let key: string, cdn: string;
   try {
-    key = new URL(DSN).username;
+    const dsn = new URL(DSN);
+    key = dsn.username;
+    // EU-region projects (o….ingest.de.sentry.io) have their loader on js-de.sentry-cdn.com.
+    cdn = dsn.hostname.includes(".de.") ? "js-de.sentry-cdn.com" : "js.sentry-cdn.com";
   } catch {
     return null;
   }
   return (
     <>
-      <script async src={`https://js.sentry-cdn.com/${key}.min.js`} crossOrigin="anonymous" />
+      <script async src={`https://${cdn}/${key}.min.js`} crossOrigin="anonymous" />
       <script dangerouslySetInnerHTML={{ __html: FETCH_WATCH }} />
     </>
   );
