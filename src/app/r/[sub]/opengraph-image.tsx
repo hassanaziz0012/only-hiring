@@ -2,6 +2,8 @@ import { ImageResponse } from "next/og";
 import { OG_COLORS, OG_FONTS, OG_SIZE, OgWordmark } from "@/lib/og";
 import { subredditProfile, SUBREDDITS } from "@/lib/subreddits";
 
+export const dynamic = "force-static";
+
 export const alt = "The subreddit's name: hiring posts only";
 export const size = OG_SIZE;
 export const contentType = "image/png";

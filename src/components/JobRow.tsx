@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { formatPay } from "@/lib/format";
 import { scamWarningLabel, type Job } from "@/lib/jobs";
 
@@ -17,9 +16,11 @@ export function JobRow({ job, facets }: { job: Job; facets: (string | null)[] })
       </p>
       <div className="min-w-0">
         <h3 className="text-lead font-bold tracking-[-0.02em] text-balance">
-          <Link href={`/jobs/${job.id}`} className="tap decoration-accent decoration-[0.08em] underline-offset-[0.18em] hover:underline">
+          {/* A plain link: job pages are loaded whole, so the build can leave out their client-navigation files
+              (scripts/cloudflare-assets.mjs). */}
+          <a href={`/jobs/${job.id}`} className="tap decoration-accent decoration-[0.08em] underline-offset-[0.18em] hover:underline">
             {job.jobTitle}
-          </Link>
+          </a>
         </h3>
         {(warning || shown.length > 0) && (
           <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Details">

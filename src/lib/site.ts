@@ -34,14 +34,15 @@ export const SCAM_HIDE_THRESHOLD = 0.6;
 /** Jobs at or above this scam score carry a visible warning. */
 export const SCAM_WARN_THRESHOLD = 0.4;
 
+/** The production site, which canonical URLs, the sitemap and Open Graph tags point at. */
+export const PRODUCTION_URL = "https://onlyhiring.hassandev.me";
+
 /**
- * Absolute base URL for metadata (Open Graph, sitemap). Vercel sets
- * VERCEL_PROJECT_PRODUCTION_URL automatically; NEXT_PUBLIC_SITE_URL overrides it.
+ * Absolute base URL for metadata (Open Graph, sitemap), and the Worker's sign-in. NEXT_PUBLIC_SITE_URL overrides
+ * it; production builds default to PRODUCTION_URL, development to localhost.
  */
 export function siteUrl(): URL {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
   if (explicit) return new URL(explicit);
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (vercel) return new URL(`https://${vercel}`);
-  return new URL("http://localhost:3000");
+  return new URL(process.env.NODE_ENV === "production" ? PRODUCTION_URL : "http://localhost:3000");
 }

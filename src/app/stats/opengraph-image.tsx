@@ -3,6 +3,8 @@ import { getSiteStats } from "@/lib/data";
 import { OG_COLORS, OG_FONTS, OG_SIZE, OgWordmark } from "@/lib/og";
 import { num, pct } from "@/lib/stats";
 
+export const dynamic = "force-static";
+
 export const alt = "How many posts on Reddit's job subreddits are hiring";
 export const size = OG_SIZE;
 export const contentType = "image/png";

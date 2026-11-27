@@ -248,7 +248,7 @@ export default async function AboutPage() {
               <div>
                 <h3 className="text-lead font-bold">Your data</h3>
                 <p className="mt-2">
-                  We count page views with Vercel Web Analytics, which sets no cookies and stores no personal
+                  We count page views with Cloudflare Web Analytics, which sets no cookies and stores no personal
                   identifiers. There are no ad trackers. Jobs you mark as applied are saved in your browser. If you create an
                   account (optional: sign in with Google, or an email and password), they&apos;re saved to it instead, so they survive
                   cleared browser data and show up on any device. You can delete your account at any time. The{" "}

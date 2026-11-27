@@ -61,3 +61,7 @@ next-env.d.ts
 
 # SEO audit notes (kept local)
 /docs/seo-audit/
+
+# Cloudflare: wrangler's local state, and the Worker's secrets for `wrangler dev`
+/.wrangler/
+.dev.vars*

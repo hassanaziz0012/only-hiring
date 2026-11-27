@@ -7,6 +7,8 @@ import { siteUrl } from "@/lib/site";
 // Claude-SearchBot, Claude-User, PerplexityBot...) aren't listed, so they still match "*".
 const TRAINING_CRAWLERS = ["GPTBot", "ClaudeBot", "anthropic-ai", "CCBot", "Bytespider", "meta-externalagent", "Amazonbot"];
 
+export const dynamic = "force-static";
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [

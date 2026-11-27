@@ -213,6 +213,8 @@ function chipRows(s: SiteStats): number {
   return rows;
 }
 
+export const dynamic = "force-static";
+
 export async function GET() {
   const s = await getSiteStats();
   if (!s || s.read === 0) return new Response("The figures aren't available right now.", { status: 503 });

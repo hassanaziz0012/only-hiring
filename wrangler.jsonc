@@ -1,0 +1,27 @@
+// Cloudflare Worker for the site. `npm run build` writes the static export to out/, and `npm run deploy` uploads
+// it with this Worker (scripts/deploy.mjs). See README.md, "Hosting on Cloudflare".
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "onlyhiring",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-11-01",
+  // node:crypto (better-auth's scrypt, the feedback IP hash) and the Neon driver need it.
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    // Static files are served without running the Worker, which costs no CPU and counts toward no request limit.
+    // Only these paths run it first. Keep them in step with route() in worker/index.ts.
+    "run_worker_first": ["/api/auth/*", "/api/applied", "/api/feedback", "/api/jobs/*", "/mcp", "/feed.xml"],
+  },
+  "vars": {
+    "SITE_URL": "https://onlyhiring.hassandev.me",
+    "EXTRA_HOSTS": "onlyhiring.hassanaziz0012.workers.dev",
+    "NOINDEX": "0",
+  },
+  "observability": { "enabled": true },
+}

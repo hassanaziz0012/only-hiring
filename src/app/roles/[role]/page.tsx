@@ -3,9 +3,6 @@ import { notFound } from "next/navigation";
 import { CategoryPage, categoryMetadata } from "@/components/CategoryPage";
 import { roleCategory, ROLES } from "@/lib/categories";
 
-// Same as subreddit pages: the whole page is static, so an unknown role can still answer 404.
-export const ensureStatic = "navigation";
-
 export function generateStaticParams() {
   return ROLES.map((r) => ({ role: r.slug }));
 }

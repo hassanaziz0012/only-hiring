@@ -1,5 +1,5 @@
 // What the MCP server's tools do with the JSON from /api/jobs: the search filters, and the Markdown each tool
-// returns. Pure functions over ApiJob, so the route only fetches and wires them up (see src/app/mcp/route.ts).
+// returns. Pure functions over ApiJob, so the route only fetches and wires them up (see worker/mcp.ts).
 // Every job carries its scam warning on the line under its title, so an assistant can't quote a job without it.
 
 import { z } from "zod";

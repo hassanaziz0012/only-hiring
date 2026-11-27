@@ -2,6 +2,8 @@ import { ImageResponse } from "next/og";
 import { OG_COLORS, OG_FONTS, OG_SIZE, OgWordmark } from "@/lib/og";
 import { SITE_NAME } from "@/lib/site";
 
+export const dynamic = "force-static";
+
 export const alt = `${SITE_NAME}: Reddit job posts, minus the noise`;
 export const size = OG_SIZE;
 export const contentType = "image/png";

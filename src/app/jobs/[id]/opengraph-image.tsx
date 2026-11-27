@@ -1,22 +1,21 @@
 import { ImageResponse } from "next/og";
-import { getJob, getJobs } from "@/lib/data";
+import { getAllJobIds, getJob } from "@/lib/data";
 import { formatPay } from "@/lib/format";
 import { scamWarningLabel } from "@/lib/jobs";
 import { labelFor, WORK_MODE_LABELS } from "@/lib/labels";
 import { clip, drawable, OG_COLORS, OG_FONTS, OG_SIZE, OgWordmark } from "@/lib/og";
 
+export const dynamic = "force-static";
+
 export const alt = "The job's title, pay and subreddit";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
-// Built with the job pages. Jobs older than the list window render on first request, and the CDN keeps them.
-export async function generateStaticParams() {
-  const result = await getJobs();
-  if (!result.ok || result.jobs.length === 0) return [{ id: "_" }];
-  return result.jobs.map((job) => ({ id: job.id }));
+// Built with the job pages, one for every job.
+export function generateStaticParams() {
+  const ids = getAllJobIds();
+  return ids.length ? ids.map((id) => ({ id })) : [{ id: "_" }];
 }
-
-const CDN_CACHE = { "cache-control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800" };
 
 /** Long titles get a smaller size, so up to three lines fit between the header and the pay. */
 function titleSize(title: string): number {
@@ -65,6 +64,6 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         </div>
       </div>
     ),
-    { ...size, fonts: OG_FONTS, headers: CDN_CACHE },
+    { ...size, fonts: OG_FONTS },
   );
 }

@@ -26,9 +26,6 @@ import {
   type SubredditStats,
 } from "@/lib/subreddits";
 
-// Same as job pages: the whole page is static, so an unknown subreddit can still answer 404.
-export const ensureStatic = "navigation";
-
 export function generateStaticParams() {
   return SUBREDDITS.map((s) => ({ sub: s.slug }));
 }

@@ -2,8 +2,10 @@ import { toApiJob, type ApiJobList } from "@/lib/api";
 import { getJobs } from "@/lib/data";
 import { siteUrl } from "@/lib/site";
 
-// Every job in the list window as JSON, for agents and the MCP server. Prerendered and served
-// from the CDN like the feed, so reading it never runs a function.
+// Every job in the list window as JSON, for agents and the MCP server. Served at /api/jobs (API_JOBS_FILE in
+// lib/api.ts explains why the file is named this). A static file, so reading it never runs the Worker.
+
+export const dynamic = "force-static";
 
 export async function GET() {
   const result = await getJobs();

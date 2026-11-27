@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Analytics } from "@vercel/analytics/next";
 import { AccountLayer } from "@/components/account/AccountLayer";
 import { FeedbackDialog } from "@/components/FeedbackNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -18,6 +17,9 @@ const pilcrow = localFont({
   variable: "--font-pilcrow",
   display: "swap",
 });
+
+// Set at build time by scripts/deploy.mjs. Without it there are no page-view counts.
+const CF_ANALYTICS_TOKEN = process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN;
 
 // Aimed at "reddit job board" and "reddit hiring posts"; the slogan stays in the H1.
 const HOME_TITLE = `Reddit job board: hiring posts only, scam-checked | ${SITE_NAME}`;
@@ -66,7 +68,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteFooter />
         <AccountLayer googleEnabled={googleSignInEnabled()} />
         <FeedbackDialog />
-        <Analytics />
+        {CF_ANALYTICS_TOKEN && (
+          // Cloudflare Web Analytics: cookieless page-view counts. The token is public (it's in every page).
+          <script
+            defer
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={JSON.stringify({ token: CF_ANALYTICS_TOKEN })}
+          />
+        )}
         <JsonLd data={siteGraph()} />
       </body>
     </html>

@@ -1,5 +1,6 @@
-// Markdown for AI agents. Agents that send `Accept: text/markdown` get a Markdown homepage (/index.md) and
-// Markdown 404s instead of HTML; see src/proxy.ts and the fallback rewrite in next.config.ts.
+// Markdown for AI agents: a Markdown copy of the homepage at /index.md, linked from the homepage's <head>.
+// The site is static files, so / can't answer `Accept: text/markdown` itself; on the live domain a Cloudflare
+// URL rewrite rule can serve /index.md there instead (README.md, "Hosting on Cloudflare").
 // Follows https://acceptmarkdown.com: parse Accept properly and send Vary: Accept with every negotiated response.
 // Pure functions: imported by the proxy as well as the routes.
 

@@ -8,6 +8,8 @@ import { STATS_PATH } from "@/lib/stats";
 import { BEST_SUBS_PATH, isSubredditIndexable, subredditLive, subredditPath, SUBREDDITS } from "@/lib/subreddits";
 
 // No changeFrequency or priority: Google ignores both.
+export const dynamic = "force-static";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
   const url = (path: string) => new URL(path, base).toString();

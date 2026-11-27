@@ -1,4 +1,4 @@
-// The public JSON shapes served by /api/jobs and /api/jobs/[id], which the MCP server (src/app/mcp) reads too.
+// The public JSON shapes served by /api/jobs and /api/jobs/[id], which the MCP server (worker/mcp.ts) reads too.
 // Pure functions: they never read the data files. Enum-like fields keep the pipeline's raw keys (see lib/labels.ts), so
 // clients can filter on them; `pay.text` and `where` are the site's own display strings.
 
@@ -7,7 +7,29 @@ import { isExpired, isNsfw, scamWarningLabel, type Job, type LanguageRequirement
 import { APPLY_METHOD_LABELS, labelFor } from "./labels";
 
 export const API_JOBS_PATH = "/api/jobs";
+/** The file behind API_JOBS_PATH. It can't be built at /api/jobs, which is also the folder of the per-job files, so
+ * out/_redirects rewrites API_JOBS_PATH to it (scripts/cloudflare-assets.mjs). */
+export const API_JOBS_FILE = "/api/jobs.json";
 export const apiJobPath = (id: string) => `${API_JOBS_PATH}/${encodeURIComponent(id)}`;
+
+/**
+ * /api/jobs/<id> isn't a file per job: Cloudflare allows 20,000 files per deploy on the free plan, and a file per
+ * job would use them up within months. The build writes every job's detail into one of JOB_SHARDS files
+ * (src/app/api/job-shards), and the Worker answers /api/jobs/<id> from the right one (worker/index.ts).
+ */
+export const JOB_SHARDS = 64;
+
+/** Which shard file a job's detail is in. */
+export function jobShard(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % JOB_SHARDS;
+}
+
+export const jobShardPath = (shard: number) => `/api/job-shards/${shard}`;
+
+/** One shard file: the details of every job whose ID hashes to it, by ID. */
+export type ApiJobShard = Record<string, ApiJobDetail>;
 
 export type ApiJob = {
   id: string;

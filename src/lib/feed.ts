@@ -1,13 +1,10 @@
-import "server-only";
-
 import { feedSearch, filterSummary, filtersFromSearch, matches } from "@/components/board/filters";
-import { getJobs } from "./data";
 import { formatPay } from "./format";
-import { isIndexable } from "./jobs";
+import { isIndexable, type Job } from "./jobs";
 import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "./site";
 
-// RSS 2.0 feed of the newest open jobs, for feed readers and aggregators. Built from the cached job list like the
-// sitemap, so it refreshes with it.
+// RSS 2.0 feed of the newest open jobs, for feed readers and aggregators. A pure function of the job list: the build
+// writes the unfiltered feed (/feed-all.xml), and the Worker builds filtered ones from /api/board (worker/feed.ts).
 //
 // It takes the board's query string, so /feed.xml?role=web_development&mode=remote lists what
 // /?role=web_development&mode=remote shows, newest first.
@@ -19,10 +16,11 @@ const NO_APPLIED: ReadonlySet<string> = new Set();
 const escape = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 
+/** What a feed is built from: getJobs() at build time, or /api/board in the Worker. */
+export type FeedSource = { ok: true; jobs: Job[]; fetchedAt: string; syncedAt: string | null } | { ok: false };
+
 /** The feed for a board query string ("" for the whole feed), and whether the job list could be read. */
-export async function buildFeed(query: string): Promise<{ ok: boolean; xml: string }> {
-  const result = await getJobs();
-  const base = siteUrl();
+export function buildFeed(result: FeedSource, query: string, base: URL = siteUrl()): { ok: boolean; xml: string } {
   const url = (path: string) => new URL(path, base).toString();
   const at = result.ok ? Date.parse(result.fetchedAt) : 0;
 

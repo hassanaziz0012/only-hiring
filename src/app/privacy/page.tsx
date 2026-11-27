@@ -64,8 +64,8 @@ export default function PrivacyPage() {
 
           <Section id="analytics" title="Page views">
             <p>
-              We count page views with Vercel Web Analytics. It records the page, the site that linked to it, and your
-              country, browser, operating system and device type. It sets no cookies and stores no personal
+              We count page views with Cloudflare Web Analytics. It records the page, the site that linked to it, and
+              your country, browser, operating system and device type. It sets no cookies and stores no personal
               identifiers.
             </p>
           </Section>
@@ -99,7 +99,7 @@ export default function PrivacyPage() {
 
           <Section id="processors" title="Who handles the data">
             <List>
-              <li>Vercel hosts the site and runs the page-view counts.</li>
+              <li>Cloudflare hosts the site and runs the page-view counts.</li>
               <li>Neon hosts the accounts database, in the US.</li>
               <li>Resend delivers feedback messages to my inbox.</li>
               <li>Google handles sign-in, if you choose it.</li>

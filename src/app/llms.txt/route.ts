@@ -9,6 +9,8 @@ import { EXPIRY_DAYS, LIST_WINDOW_DAYS, MAKER, SCAM_HIDE_THRESHOLD, SCAM_WARN_TH
 // llms.txt (https://llmstxt.org): a plain summary of the site for language models. Google ignores it,
 // but answer engines may read it. Built from the site constants so the thresholds can't drift.
 
+export const dynamic = "force-static";
+
 export function GET() {
   const url = (path: string) => new URL(path, siteUrl()).toString();
 

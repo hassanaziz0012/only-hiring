@@ -6,11 +6,13 @@ import { MARKDOWN_HEADERS, MARKDOWN_HOME_JOBS, markdownText } from "@/lib/markdo
 import { SCAM_HIDE_THRESHOLD, SCAM_WARN_THRESHOLD, SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 import { SUBREDDITS, subredditLive, subredditPath } from "@/lib/subreddits";
 
-// The homepage as Markdown, for AI agents: served at / when Accept prefers text/markdown (see src/proxy.ts),
-// and here directly. The HTML homepage lists every open job, which runs past what an agent can read, so this
-// lists the newest few and points to the subreddit pages for the rest. Prerendered like the feed.
+// The homepage as Markdown, for AI agents, linked from the homepage's <head> (see lib/markdown.ts). The HTML
+// homepage lists every open job, which runs past what an agent can read, so this lists the newest few and points
+// to the subreddit pages for the rest. A static file, like the feed.
 
 const MAX_SKILLS = 6;
+
+export const dynamic = "force-static";
 
 export async function GET() {
   const result = await getJobs();
